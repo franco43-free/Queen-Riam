@@ -1,9 +1,10 @@
+const getFakeVcard = require('../lib/fakeVcard');
 async function reportBugCommand(sock, chatId, message, userMessage, settings) {
     const sender = message.key.participant || message.key.remoteJid;
     const text = userMessage.split(" ").slice(1).join(" "); // everything after .reportbug
 
     if (!text) {
-        await sock.sendMessage(chatId, { text: `❌ Please describe the issue.\n\nExample: ${settings.prefix}reportbug Play command isn't working` }, { quoted: message });
+        await sock.sendMessage(chatId, { text: `❌ Please describe the issue.\n\nExample: ${settings.prefix}reportbug Play command isn't working` }, { quoted: getFakeVcard() });
         return;
     }
 
@@ -31,11 +32,11 @@ ${bugReportMsg}
         const ownerJid = "233509977126@s.whatsapp.net";
 
         await sock.sendMessage(ownerJid, { text: bugReportMsg, mentions: [sender] });
-        await sock.sendMessage(chatId, { text: confirmationMsg, mentions: [sender] }, { quoted: message });
+        await sock.sendMessage(chatId, { text: confirmationMsg, mentions: [sender] }, { quoted: getFakeVcard() });
 
     } catch (err) {
         console.error("reportBugCommand error:", err);
-        await sock.sendMessage(chatId, { text: "❌ Failed to send bug report." }, { quoted: message });
+        await sock.sendMessage(chatId, { text: "❌ Failed to send bug report." }, { quoted: getFakeVcard() });
     }
 }
 

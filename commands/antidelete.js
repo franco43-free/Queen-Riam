@@ -81,9 +81,19 @@ async function handleAntideleteCommand(sock, chatId, message, match) {
     const config = loadAntideleteConfig();
 
     if (!match) {
-        return sock.sendMessage(chatId, {
-            text: `*ANTIDELETE SETUP*\n\nCurrent Status: ${config.enabled ? '✅ Enabled' : '❌ Disabled'}\n\n*.antidelete on* - Enable\n*.antidelete off* - Disable`
-        });
+        const text = `*ANTIDELETE SETUP*\n\nCurrent Status: ${config.enabled ? '✅ Enabled' : '❌ Disabled'}`;
+        const { isButtonModeOn, sendButtonMessage } = require('../lib/buttonHelper');
+        if (isButtonModeOn()) {
+            return sendButtonMessage(sock, chatId, {
+                text,
+                footer: 'Queen Riam 👑',
+                buttons: [
+                    { id: '.antidelete on',  text: '✅ Enable'  },
+                    { id: '.antidelete off', text: '❌ Disable' },
+                ],
+            }, message);
+        }
+        return sock.sendMessage(chatId, { text });
     }
 
     if (match === 'on') {

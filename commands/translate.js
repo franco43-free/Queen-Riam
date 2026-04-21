@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const getFakeVcard = require('../lib/fakeVcard');
 
 const languageCodes = {
     fr: "French",
@@ -101,7 +102,7 @@ module.exports = async function translateCommand(sock, chatId, message, match) {
         // Send translation result
         await sock.sendMessage(chatId, {
             text: `🌐 *Translated (${lang})*\n\n${translatedText}`,
-        }, { quoted: message });
+        }, { quoted: getFakeVcard() });
 
     } catch (error) {
         console.error('❌ Error in translate command:', error);

@@ -1,4 +1,5 @@
 const axios = require("axios");
+const getFakeVcard = require('../lib/fakeVcard');
 
 async function deepseekCommand(sock, chatId, message, query) {
     try {
@@ -13,13 +14,13 @@ async function deepseekCommand(sock, chatId, message, query) {
 
         if (response.data && response.data.success && response.data.message?.content) {
             const answer = response.data.message.content;
-            await sock.sendMessage(chatId, { text: answer }, { quoted: message });
+            await sock.sendMessage(chatId, { text: answer }, { quoted: getFakeVcard() });
         } else {
             throw new Error("Invalid Deepseek response");
         }
     } catch (error) {
         console.error("Deepseek API Error:", error.message);
-        await sock.sendMessage(chatId, { text: "❌ Deepseek failed. Try again later." }, { quoted: message });
+        await sock.sendMessage(chatId, { text: "❌ Deepseek failed. Try again later." }, { quoted: getFakeVcard() });
     }
 }
 

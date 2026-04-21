@@ -69,10 +69,23 @@ async function autoStatusCommand(sock, chatId, msg, args) {
         // Show usage if no arguments
         if (!args || args.length === 0) {
             const status = config.enabled ? '✅ enabled' : '❌ disabled';
-            await sock.sendMessage(chatId, { 
-                text: `🔄 *Auto Status View*\n\nCurrent status: ${status}\n\n📌 *Usage:*\n.autostatus on - Enable auto status view\n.autostatus off - Disable auto status view\n.autostatus - Show current status`,
-                ...channelInfo
-            });
+            const text = `🔄 *Auto Status View*\n\nCurrent status: ${status}`;
+            const { isButtonModeOn, sendButtonMessage } = require('../lib/buttonHelper');
+            if (isButtonModeOn()) {
+                await sendButtonMessage(sock, chatId, {
+                    text,
+                    footer: 'Queen Riam 👑',
+                    buttons: [
+                        { id: '.autoviewstatus on',  text: '✅ Enable'  },
+                        { id: '.autoviewstatus off', text: '❌ Disable' },
+                    ],
+                }, msg);
+            } else {
+                await sock.sendMessage(chatId, {
+                    text: text + `\n\n📌 *Usage:*\n.autoviewstatus on - Enable\n.autoviewstatus off - Disable`,
+                    ...channelInfo
+                });
+            }
             return;
         }
 

@@ -7,17 +7,17 @@ module.exports = async function bibleCommand(sock, chatId, message, query) {
             return;
         }
 
-        const url = `https://apis.davidcyriltech.my.id/bible?reference=${encodeURIComponent(query)}`;
+        const url = `https://hector-bible-api.officialhectormanuel.workers.dev/?q=${encodeURIComponent(query)}`;
         const res = await axios.get(url);
 
-        if (!res.data.success) {
+        if (!res.data.status) {
             await sock.sendMessage(chatId, { text: "❌ Could not fetch the verse. Please check the reference." });
             return;
         }
 
         const { reference, translation, text } = res.data;
 
-        const reply = `📖 *${reference}* (${translation})\n\n${text}`;
+        const reply = `📖 *${reference}* (${translation})\n\n${text.trim()}`;
         await sock.sendMessage(chatId, { text: reply });
 
     } catch (err) {

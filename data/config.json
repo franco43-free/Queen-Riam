@@ -5,6 +5,7 @@
   "AUTORECORDTYPE": "false",
   "AUTO_STATUS_REACT": "false",
   "AUTO_STATUS_REPLY": "false",
-  "AUTO_STATUS_MSG": "Viewed By Riam",
-  "ANTICALL": "off"
+  "AUTO_STATUS_MSG": "Viewed By Queen Riam",
+  "ANTICALL": "decline",
+  "BUTTONMODE": "on"
 }

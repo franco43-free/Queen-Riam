@@ -1,4 +1,5 @@
 const { igdl } = require("ruhend-scraper");
+const getFakeVcard = require('../lib/fakeVcard');
 
 // Store processed message IDs to prevent duplicates
 const processedMessages = new Set();
@@ -38,7 +39,7 @@ async function instagramCommand(sock, chatId, message) {
             return await sock.sendMessage(
                 chatId,
                 { text: "📌 Usage: Send or reply to an Instagram post/reel/video link.\nExample:\n.ig https://instagram.com/reel/xxxx" },
-                { quoted: message }
+                { quoted: getFakeVcard() }
             );
         }
 
@@ -56,7 +57,7 @@ async function instagramCommand(sock, chatId, message) {
             return await sock.sendMessage(
                 chatId,
                 { text: "⚠️ Please provide a valid Instagram link (post, reel, or video)." },
-                { quoted: message }
+                { quoted: getFakeVcard() }
             );
         }
 
@@ -69,7 +70,7 @@ async function instagramCommand(sock, chatId, message) {
             return await sock.sendMessage(
                 chatId,
                 { text: "❌ No media found at the provided link." },
-                { quoted: message }
+                { quoted: getFakeVcard() }
             );
         }
 
@@ -93,7 +94,7 @@ async function instagramCommand(sock, chatId, message) {
                         mimetype: "video/mp4",
                         caption
                     },
-                    { quoted: message }
+                    { quoted: getFakeVcard() }
                 );
             } else {
                 await sock.sendMessage(
@@ -102,7 +103,7 @@ async function instagramCommand(sock, chatId, message) {
                         image: { url: mediaUrl },
                         caption
                     },
-                    { quoted: message }
+                    { quoted: getFakeVcard() }
                 );
             }
         }
@@ -113,7 +114,7 @@ async function instagramCommand(sock, chatId, message) {
         await sock.sendMessage(
             chatId,
             { text: "❌ An error occurred while processing your request." },
-            { quoted: message }
+            { quoted: getFakeVcard() }
         );
         await sock.sendMessage(chatId, { react: { text: "❌", key: message.key } });
     }

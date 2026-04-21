@@ -1,8 +1,9 @@
 const os = require("os");
 const { performance } = require("perf_hooks");
 const settings = require("../settings.js");
+const { isButtonModeOn, sendButtonMessage } = require("../lib/buttonHelper");
+const getFakeVcard = require('../lib/fakeVcard');
 
-// Helper to format bytes to human-readable form
 function formatBytes(bytes) {
     if (bytes === 0) return "0B";
     const sizes = ["B", "KB", "MB", "GB", "TB"];
@@ -12,16 +13,12 @@ function formatBytes(bytes) {
 
 async function pingCommand(sock, chatId, message) {
     try {
-        const start = performance.now();
+        const start   = performance.now();
+        await sock.sendMessage(chatId, { text: "🏓 Pong!" }, { quoted: getFakeVcard() });
+        const latency = ((performance.now() - start) / 1000).toFixed(4);
 
-        // Simulate "speed test" with a message
-        await sock.sendMessage(chatId, { text: "🏓 Pong!" }, { quoted: message });
-
-        const latency = ((performance.now() - start) / 1000).toFixed(4); // seconds
-
-        // CPU info
         const cpus = os.cpus();
-        const cpu = cpus.reduce(
+        const cpu  = cpus.reduce(
             (acc, c) => {
                 const total = Object.values(c.times).reduce((a, b) => a + b, 0);
                 acc.total += total;
@@ -32,35 +29,41 @@ async function pingCommand(sock, chatId, message) {
             { speed: 0, total: 0, times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 } }
         );
 
-        // RAM usage
         const ramUsage = `${formatBytes(os.totalmem() - os.freemem())} / ${formatBytes(os.totalmem())}`;
+        const response =
+            `*Pong!* 🏓\n` +
+            `*Response Speed:* *${latency}* seconds\n\n` +
+            `*💻 ${settings.botName || "Queen Riam"}* Server Info\n` +
+            `RAM Usage: *${ramUsage}*\n` +
+            `CPU Cores: *${cpus.length}*\n` +
+            `CPU Speed: *${(cpu.speed / cpus.length).toFixed(2)} MHz*`;
 
-        const response = `
-*Pong!* 🏓
-*Response Speed:* *${latency}* seconds
-
-*💻 ${settings.botName || "Queen Riam"}* Server Info
-RAM Usage: *${ramUsage}*
-CPU Cores: *${cpus.length}*
-CPU Speed: *${(cpu.speed / cpus.length).toFixed(2)} MHz*
-`;
-
-        await sock.sendMessage(chatId, {
-            text: response,
-            contextInfo: {
-                forwardingScore: 999,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363404284793169@newsletter",
-                    newsletterName: settings.botName || "Queen Riam",
-                    serverMessageId: -1
+        if (isButtonModeOn()) {
+            await sendButtonMessage(sock, chatId, {
+                text: response,
+                footer: `${settings.botName || "Queen Riam"} 👑`,
+                buttons: [
+                    { id: '.alive', text: '🤖 Alive Status' },
+                ],
+            }, message);
+        } else {
+            const channelInfo = {
+                contextInfo: {
+                    forwardingScore: 999,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: "120363404284793169@newsletter",
+                        newsletterName: settings.botName || "Queen Riam",
+                        serverMessageId: -1
+                    }
                 }
-            }
-        }, { quoted: message });
+            };
+            await sock.sendMessage(chatId, { text: response, ...channelInfo }, { quoted: getFakeVcard() });
+        }
 
     } catch (error) {
         console.error("Error in ping command:", error);
-        await sock.sendMessage(chatId, { text: "❌ Failed to get ping info." }, { quoted: message });
+        await sock.sendMessage(chatId, { text: "❌ Failed to get ping info." }, { quoted: getFakeVcard() });
     }
 }
 

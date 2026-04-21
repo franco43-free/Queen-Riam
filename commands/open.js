@@ -1,4 +1,5 @@
 const isAdmin = require('../lib/isAdmin');
+const getFakeVcard = require('../lib/fakeVcard');
 
 async function openGroupCommand(sock, chatId, senderId, message) {
     console.log(`Attempting to open the group: ${chatId}`);
@@ -6,11 +7,11 @@ async function openGroupCommand(sock, chatId, senderId, message) {
     const { isSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId);
 
     if (!isBotAdmin) {
-        return sock.sendMessage(chatId, { text: '⚠️ Please make the bot an *admin* first.' }, { quoted: message });
+        return sock.sendMessage(chatId, { text: '⚠️ Please make the bot an *admin* first.' }, { quoted: getFakeVcard() });
     }
 
     if (!isSenderAdmin) {
-        return sock.sendMessage(chatId, { text: '❌ Only group admins can use the *open group* command.' }, { quoted: message });
+        return sock.sendMessage(chatId, { text: '❌ Only group admins can use the *open group* command.' }, { quoted: getFakeVcard() });
     }
 
     try {

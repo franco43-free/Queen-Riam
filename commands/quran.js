@@ -1,38 +1,47 @@
 const axios = require('axios');
+const getFakeVcard = require('../lib/fakeVcard');
 
-module.exports = async function quranCommand(sock, chatId, message, surahNumber) {
+module.exports = async function quranCommand(sock, chatId, message, query) {
     try {
-        if (!surahNumber || isNaN(surahNumber)) {
-            await sock.sendMessage(chatId, { text: "📖 Usage: .quran <surah_number>\nExample: .quran 1" });
+        if (!query) {
+            await sock.sendMessage(chatId, { text: "📖 Usage: .quran <surah>:<ayah>\nExample: .quran 1:1 or .quran 2:255" });
             return;
         }
 
-        const url = `https://apis.davidcyriltech.my.id/quran?surah=${surahNumber}`;
+        const parts = query.includes(':') ? query.split(':') : query.trim().split(/\s+/);
+        const surah = parseInt(parts[0]);
+        const ayah = parseInt(parts[1]);
+
+        if (!surah || !ayah || isNaN(surah) || isNaN(ayah)) {
+            await sock.sendMessage(chatId, { text: "❌ Invalid format. Use .quran <surah>:<ayah>\nExample: .quran 2:255" });
+            return;
+        }
+
+        const url = `https://quran-api.officialhectormanuel.workers.dev/?s=${surah}&a=${ayah}`;
         const res = await axios.get(url);
 
-        if (!res.data.success) {
-            await sock.sendMessage(chatId, { text: "❌ Could not fetch Surah. Please try another number." });
+        if (!res.data.status) {
+            await sock.sendMessage(chatId, { text: "❌ Could not fetch the verse. Please check the surah and ayah number." });
             return;
         }
 
-        const { number, name, type, ayahCount, tafsir, recitation } = res.data.surah;
+        const { arabic, english, audio } = res.data;
 
-        // 1️⃣ Send surah info as text
-        let reply = `📖 *Surah ${name.english}* (${name.arabic})\n\n`;
-        reply += `🔢 Surah Number: ${number}\n📌 Type: ${type}\n📜 Ayahs: ${ayahCount}\n\n`;
-        reply += `📝 Tafsir: ${tafsir.id}`;
+        const reply =
+            `🕌 *Surah ${surah}, Ayah ${ayah}*\n\n` +
+            `*Arabic:*\n${arabic}\n\n` +
+            `*English:*\n${english}`;
 
         await sock.sendMessage(chatId, { text: reply });
 
-        // 2️⃣ Send audio as PTT (voice note)
         await sock.sendMessage(chatId, {
-            audio: { url: recitation },
+            audio: { url: audio },
             mimetype: "audio/mp4",
             ptt: true
-        }, { quoted: message });
+        }, { quoted: getFakeVcard() });
 
     } catch (err) {
-        await sock.sendMessage(chatId, { text: "⚠️ Error fetching Surah. Try again later." });
+        await sock.sendMessage(chatId, { text: "⚠️ Error fetching verse. Try again later." });
         console.error("Quran command error:", err.message);
     }
 };

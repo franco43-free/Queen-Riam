@@ -1,4 +1,5 @@
 const axios = require("axios");
+const getFakeVcard = require('../lib/fakeVcard');
 
 async function scriptCommand(sock, chatId, message) {
     try {
@@ -39,7 +40,7 @@ async function scriptCommand(sock, chatId, message) {
                     sourceUrl: repoUrl
                 }
             }
-        }, { quoted: message });
+        }, { quoted: getFakeVcard() });
 
         // Fetch and send ZIP (convert to Buffer explicitly)
         const { data: zipBuffer } = await axios.get(zipUrl, { responseType: "arraybuffer" });
@@ -48,14 +49,14 @@ async function scriptCommand(sock, chatId, message) {
             document: Buffer.from(zipBuffer),
             fileName: "Queen-Riam-main.zip",
             mimetype: "application/zip"
-        }, { quoted: message });
+        }, { quoted: getFakeVcard() });
 
         // React success ✅
         await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
 
     } catch (err) {
         console.error("Script command error:", err);
-        await sock.sendMessage(chatId, { text: "❌ *Failed to fetch or send the repository ZIP.*" }, { quoted: message });
+        await sock.sendMessage(chatId, { text: "❌ *Failed to fetch or send the repository ZIP.*" }, { quoted: getFakeVcard() });
 
         // React error ❌
         await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });

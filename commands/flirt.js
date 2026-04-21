@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const getFakeVcard = require('../lib/fakeVcard');
 
 async function flirtCommand(sock, chatId, message) {
     try {
@@ -13,10 +14,10 @@ async function flirtCommand(sock, chatId, message) {
         const flirtMessage = json.result;
 
         // Send the flirt message
-        await sock.sendMessage(chatId, { text: flirtMessage }, { quoted: message });
+        await sock.sendMessage(chatId, { text: flirtMessage }, { quoted: getFakeVcard() });
     } catch (error) {
         console.error('Error in flirt command:', error);
-        await sock.sendMessage(chatId, { text: '❌ Failed to get flirt message. Please try again later!' }, { quoted: message });
+        await sock.sendMessage(chatId, { text: '❌ Failed to get flirt message. Please try again later!' }, { quoted: getFakeVcard() });
     }
 }
 

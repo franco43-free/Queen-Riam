@@ -1,66 +1,61 @@
-const axios = require("axios");
-const yts = require("yt-search");
+const yts = require('yt-search');
+const { getAudio } = require('../lib/media');
 
 async function ytplayCommand(sock, chatId, query, message) {
     if (!query) {
         return await sock.sendMessage(chatId, {
-            text: "⚠️ Please provide a YouTube link or search query.\n\nExample:\n```.ytplay another love```"
+            text: '⚠️ Please provide a YouTube link or search query.\n\nExample:\n```.ytplay another love```'
         });
     }
 
     try {
-        let videoUrl = query;
+        await sock.sendMessage(chatId, { react: { text: '🔍', key: message.key } });
 
-        // Step 1: React while searching
-        await sock.sendMessage(chatId, { react: { text: "⏳", key: message.key } });
+        let ytUrl = query;
+        let searchTitle = '';
+        let searchThumb = '';
 
-        if (!query.includes("youtube.com") && !query.includes("youtu.be")) {
+        if (!query.includes('youtube.com') && !query.includes('youtu.be')) {
             const search = await yts(query);
             if (!search.videos || search.videos.length === 0) {
+                await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
                 return await sock.sendMessage(chatId, { text: `❌ No results found for: ${query}` });
             }
-            videoUrl = search.videos[0].url;
+            ytUrl = search.videos[0].url;
+            searchTitle = search.videos[0].title;
+            searchThumb = search.videos[0].thumbnail;
         }
 
-        // Step 2: React while fetching link
-        await sock.sendMessage(chatId, { react: { text: "📥", key: message.key } });
+        await sock.sendMessage(chatId, { react: { text: '📥', key: message.key } });
+        const { buffer, title, thumbnail } = await getAudio(ytUrl);
 
-        const apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(videoUrl)}`;
-        const response = await axios.get(apiUrl, { timeout: 60000 });
-        const data = response.data?.result;
-
-        if (!data || !data.download_url) {
-            await sock.sendMessage(chatId, { react: { text: "❌", key: message.key } });
-            return await sock.sendMessage(chatId, { text: "❌ Failed to fetch audio. Try another link." });
-        }
-
-        // Step 3: React while sending audio
-        await sock.sendMessage(chatId, { react: { text: "🎶", key: message.key } });
+        await sock.sendMessage(chatId, { react: { text: '🎶', key: message.key } });
+        const finalTitle = title || searchTitle || 'yt-audio';
+        const finalThumb = thumbnail || searchThumb;
 
         await sock.sendMessage(chatId, {
-            audio: { url: data.download_url },
-            mimetype: "audio/mpeg",
+            audio: buffer,
+            mimetype: 'audio/mpeg',
+            fileName: `${finalTitle}.mp3`,
             ptt: false,
-            fileName: `${data.title || "yt-audio"}.mp3`,
             contextInfo: {
                 externalAdReply: {
-                    title: data.title || "YouTube Audio",
-                    body: "🎶 Powered by YTPlay",
-                    thumbnailUrl: data.thumbnail,
-                    sourceUrl: videoUrl,
+                    title: finalTitle,
+                    body: '🎶 Powered by Queen Riam',
+                    thumbnailUrl: finalThumb,
+                    sourceUrl: ytUrl,
                     mediaType: 1,
                     renderLargerThumbnail: true
                 }
             }
         });
 
-        // Final ✅ reaction
-        await sock.sendMessage(chatId, { react: { text: "✅", key: message.key } });
+        await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
 
     } catch (error) {
-        console.error("YTPlay Error:", error.message);
-        await sock.sendMessage(chatId, { react: { text: "❌", key: message.key } });
-        await sock.sendMessage(chatId, { text: "❌ An error occurred while processing your request." });
+        console.error('YTPlay Error:', error.message);
+        await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
+        await sock.sendMessage(chatId, { text: '❌ An error occurred while processing your request.' });
     }
 }
 
