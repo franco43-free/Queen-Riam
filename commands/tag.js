@@ -3,6 +3,7 @@ const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const fs = require('fs');
 const path = require('path');
 
+const { getLang } = require('../lib/lang');
 async function downloadMediaMessage(message, mediaType) {
     const stream = await downloadContentFromMessage(message, mediaType);
     let buffer = Buffer.from([]);
@@ -18,7 +19,7 @@ async function tagCommand(sock, chatId, senderId, messageText, replyMessage) {
     const { isSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId);
 
     if (!isBotAdmin) {
-        await sock.sendMessage(chatId, { text: 'Please make the bot an admin first.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).tag_bot_not_admin });
         return;
     }
 

@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const { getLang } = require('../lib/lang');
 
 async function memeCommand(sock, chatId, message) {
     try {
@@ -26,7 +27,7 @@ async function memeCommand(sock, chatId, message) {
     } catch (error) {
         console.error('Error in meme command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Failed to fetch meme. Please try again later.'
+            text: getLang(sock).meme_error
         });
     }
 }

@@ -4,6 +4,7 @@ const fs     = require('fs');
 const path   = require('path');
 const axios  = require('axios');
 const { isButtonModeOn } = require('../lib/buttonHelper');
+const { getLang } = require('../lib/lang');
 const getFakeVcard = require('../lib/fakeVcard');
 let sendButtons;
 try {
@@ -61,7 +62,7 @@ async function githubCommand(sock, chatId, message) {
     } catch (error) {
         console.error('GitHub Command Error:', error);
         await sock.sendMessage(chatId, {
-            text: '❌ Error fetching repository information.'
+            text: getLang(sock).github_error
         }, { quoted: getFakeVcard() });
     }
 }
@@ -69,7 +70,7 @@ async function githubCommand(sock, chatId, message) {
 async function repoZipCommand(sock, chatId, message) {
     try {
         await sock.sendMessage(chatId, { react: { text: '⏳', key: message.key } });
-        await sock.sendMessage(chatId, { text: '📦 Downloading Queen Riam repository ZIP...' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).github_downloading }, { quoted: getFakeVcard() });
 
         const zipUrl  = 'https://github.com/Dev-Kango/Queen-Riam/archive/refs/heads/main.zip';
         const response = await axios.get(zipUrl, { responseType: 'arraybuffer', timeout: 60000 });
@@ -86,7 +87,7 @@ async function repoZipCommand(sock, chatId, message) {
     } catch (error) {
         console.error('RepoZip Error:', error);
         await sock.sendMessage(chatId, {
-            text: '❌ Failed to download the repository ZIP. Try again later.'
+            text: getLang(sock).github_zip_failed
         }, { quoted: getFakeVcard() });
         await sock.sendMessage(chatId, { react: { text: '⚠️', key: message.key } });
     }

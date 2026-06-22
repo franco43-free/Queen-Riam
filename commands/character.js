@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { channelInfo } = require('../lib/messageConfig');
+const { getLang } = require('../lib/lang');
 
 async function characterCommand(sock, chatId, message) {
     let userToAnalyze;
@@ -15,7 +16,7 @@ async function characterCommand(sock, chatId, message) {
     
     if (!userToAnalyze) {
         await sock.sendMessage(chatId, { 
-            text: 'Please mention someone or reply to their message to analyze their character!', 
+            text: getLang(sock).character_no_target, 
             ...channelInfo 
         });
         return;
@@ -73,7 +74,7 @@ async function characterCommand(sock, chatId, message) {
     } catch (error) {
         console.error('Error in character command:', error);
         await sock.sendMessage(chatId, { 
-            text: 'Failed to analyze character! Try again later.',
+            text: getLang(sock).character_error,
             ...channelInfo 
         });
     }

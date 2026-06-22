@@ -1,3 +1,4 @@
+const { getLang } = require('../lib/lang');
 const TicTacToe = require('../lib/tictactoe');
 
 // Store games globally
@@ -11,7 +12,7 @@ async function tictactoeCommand(sock, chatId, senderId, text) {
             [room.game.playerX, room.game.playerO].includes(senderId)
         )) {
             await sock.sendMessage(chatId, { 
-                text: '❌ You are still in a game. Type *surrender* to quit.' 
+                text: getLang(sock).tictactoe_in_game 
             });
             return;
         }
@@ -77,7 +78,7 @@ ${arr.slice(6).join('')}
             if (text) room.name = text;
 
             await sock.sendMessage(chatId, { 
-                text: `⏳ *Waiting for opponent*\nType *.ttt ${text || ''}* to join!`
+                text: getLang(sock).tictactoe_waiting.replace('{name}', text || '')
             });
 
             games[room.id] = room;
@@ -86,7 +87,7 @@ ${arr.slice(6).join('')}
     } catch (error) {
         console.error('Error in tictactoe command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Error starting game. Please try again.' 
+            text: getLang(sock).tictactoe_error 
         });
     }
 }
@@ -109,7 +110,7 @@ async function handleTicTacToeMove(sock, chatId, senderId, text) {
         // Allow surrender at any time, not just during player's turn
         if (senderId !== room.game.currentTurn && !isSurrender) {
             await sock.sendMessage(chatId, { 
-                text: '❌ Not your turn!' 
+                text: getLang(sock).tictactoe_not_your_turn 
             });
             return;
         }
@@ -121,7 +122,7 @@ async function handleTicTacToeMove(sock, chatId, senderId, text) {
 
         if (!ok) {
             await sock.sendMessage(chatId, { 
-                text: '❌ Invalid move! That position is already taken.' 
+                text: getLang(sock).tictactoe_invalid_move 
             });
             return;
         }

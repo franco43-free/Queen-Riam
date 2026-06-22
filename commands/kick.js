@@ -1,6 +1,7 @@
 const isAdmin = require('../lib/isAdmin');
 const getFakeVcard = require('../lib/fakeVcard');
 
+const { getLang } = require('../lib/lang');
 async function kickCommand(sock, chatId, senderId, mentionedJids, message) {
     // Check if user is owner
     const isOwner = message.key.fromMe;
@@ -8,12 +9,12 @@ async function kickCommand(sock, chatId, senderId, mentionedJids, message) {
         const { isSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId);
 
         if (!isBotAdmin) {
-            await sock.sendMessage(chatId, { text: 'Please make the bot an admin first.' }, { quoted: getFakeVcard() });
+            await sock.sendMessage(chatId, { text: getLang(sock).common_bot_not_admin }, { quoted: getFakeVcard() });
             return;
         }
 
         if (!isSenderAdmin) {
-            await sock.sendMessage(chatId, { text: 'Only group admins can use the kick command.' }, { quoted: getFakeVcard() });
+            await sock.sendMessage(chatId, { text: getLang(sock).common_user_not_admin }, { quoted: getFakeVcard() });
             return;
         }
     }
@@ -32,7 +33,7 @@ async function kickCommand(sock, chatId, senderId, mentionedJids, message) {
     // If no user found through either method
     if (usersToKick.length === 0) {
         await sock.sendMessage(chatId, { 
-            text: 'Please mention the user or reply to their message to kick!'
+            text: getLang(sock).kick_no_target
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -43,7 +44,7 @@ async function kickCommand(sock, chatId, senderId, mentionedJids, message) {
     // Check if any of the users to kick is the bot itself
     if (usersToKick.includes(botId)) {
         await sock.sendMessage(chatId, { 
-            text: "I can't kick myself! 🤖"
+            text: getLang(sock).kick_self
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -63,7 +64,7 @@ async function kickCommand(sock, chatId, senderId, mentionedJids, message) {
     } catch (error) {
         console.error('Error in kick command:', error);
         await sock.sendMessage(chatId, { 
-            text: 'Failed to kick user(s)!'
+            text: getLang(sock).kick_failed
         });
     }
 }

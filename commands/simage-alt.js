@@ -2,11 +2,12 @@ var { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 var { exec } = require('child_process');
 var fs = require('fs');
 const ffmpeg = require('ffmpeg-static');
+const { getLang } = require('../lib/lang');
 
 async function simageCommand(sock, quotedMessage, chatId) {
     try {
         if (!quotedMessage?.stickerMessage) {
-            await sock.sendMessage(chatId, { text: 'Please reply to a sticker!' });
+            await sock.sendMessage(chatId, { text: getLang(sock).simage_no_sticker_alt });
             return;
         }
 
@@ -31,7 +32,7 @@ async function simageCommand(sock, quotedMessage, chatId) {
 
         await sock.sendMessage(chatId, { 
             image: fs.readFileSync(tempOutput),
-            caption: '✨ Here\'s your image!' 
+            caption: getLang(sock).simage_image 
         });
 
         // Cleanup
@@ -40,7 +41,7 @@ async function simageCommand(sock, quotedMessage, chatId) {
 
     } catch (error) {
         console.error('Error in simage command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to convert sticker to image!' });
+        await sock.sendMessage(chatId, { text: getLang(sock).simage_failed });
     }
 }
 

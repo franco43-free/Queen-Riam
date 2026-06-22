@@ -6,7 +6,7 @@ const settings = {
   timezone: 'Africa/Accra',
   prefix: '.',
   ownerNumber: '',
-  AUTO_STATUS_REACT: 'false',
+  AUTO_STATUS_REACT: 'true',
   AUTO_STATUS_REPLY: 'false',
   AUTO_STATUS_MSG: 'Status Viewed Queen Riam',
   AUTORECORD: 'false',
@@ -15,7 +15,7 @@ const settings = {
   giphyApiKey: '',
   commandMode: 'public',
   description: 'This is a bot for managing group commands and automating tasks.',
-  version: '2.0.0',
+  version: '1.0.0',
 };
 
 module.exports = settings;

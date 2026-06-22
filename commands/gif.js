@@ -1,11 +1,12 @@
 const axios = require('axios');
 const settings = require('../settings'); // Assuming the API key is stored here
+const { getLang } = require('../lib/lang');
 
 async function gifCommand(sock, chatId, query) {
     const apiKey = settings.giphyApiKey; // Replace with your Giphy API Key
 
     if (!query) {
-        await sock.sendMessage(chatId, { text: 'Please provide a search term for the GIF.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).gif_no_query });
         return;
     }
 
@@ -24,11 +25,11 @@ async function gifCommand(sock, chatId, query) {
         if (gifUrl) {
             await sock.sendMessage(chatId, { video: { url: gifUrl }, caption: `Here is your GIF for "${query}"` });
         } else {
-            await sock.sendMessage(chatId, { text: 'No GIFs found for your search term.' });
+            await sock.sendMessage(chatId, { text: getLang(sock).gif_not_found });
         }
     } catch (error) {
         console.error('Error fetching GIF:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to fetch GIF. Please try again later.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).gif_error });
     }
 }
 

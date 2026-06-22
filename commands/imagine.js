@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { fetchBuffer } = require('../lib/myfunc');
+const { getLang } = require('../lib/lang');
 
 async function imagineCommand(sock, chatId, message) {
     try {
@@ -12,7 +13,7 @@ async function imagineCommand(sock, chatId, message) {
         
         if (!imagePrompt) {
             await sock.sendMessage(chatId, {
-                text: 'Please provide a prompt for the image generation.\nExample: .imagine a beautiful sunset over mountains'
+                text: getLang(sock).imagine_no_prompt
             }, {
                 quoted: message
             });
@@ -21,7 +22,7 @@ async function imagineCommand(sock, chatId, message) {
 
         // Send processing message
         await sock.sendMessage(chatId, {
-            text: '🎨 Generating your image... Please wait.'
+            text: getLang(sock).imagine_generating
         }, {
             quoted: message
         });
@@ -44,7 +45,7 @@ async function imagineCommand(sock, chatId, message) {
         // Send the generated image
         await sock.sendMessage(chatId, {
             image: imageBuffer,
-            caption: `🎨 Generated image for prompt: "${imagePrompt}"`
+            caption: getLang(sock).imagine_caption.replace('{prompt}', imagePrompt)
         }, {
             quoted: message
         });
@@ -52,7 +53,7 @@ async function imagineCommand(sock, chatId, message) {
     } catch (error) {
         console.error('Error in imagine command:', error);
         await sock.sendMessage(chatId, {
-            text: '❌ Failed to generate image. Please try again later.'
+            text: getLang(sock).imagine_failed
         }, {
             quoted: message
         });

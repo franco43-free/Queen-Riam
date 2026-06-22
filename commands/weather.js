@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { sendButtonMessage } = require('../lib/buttonHelper');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 function getWeatherEmoji(weather) {
     const map = {
@@ -20,7 +21,7 @@ module.exports = async function weatherCommand(sock, chatId, city, message) {
 
         if (!w.success || !w.data) {
             return await sock.sendMessage(chatId, {
-                text: "❌ Could not find weather for that location."
+                text: getLang(sock).weather_not_found
             }, { quoted: getFakeVcard() });
         }
 
@@ -29,10 +30,10 @@ module.exports = async function weatherCommand(sock, chatId, city, message) {
         const text  =
             `🌍 *Weather for ${d.location}, ${d.country}*\n` +
             `${emoji} ${d.description}\n\n` +
-            `🌡️ Temperature: *${d.temperature}* (feels like ${d.feels_like})\n` +
-            `💧 Humidity: ${d.humidity}\n` +
-            `🌬️ Wind: ${d.wind_speed}\n` +
-            `📊 Pressure: ${d.pressure}\n\n` +
+            `${getLang(sock).weather_temp} *${d.temperature}* (feels like ${d.feels_like})\n` +
+            `${getLang(sock).weather_humidity} ${d.humidity}\n` +
+            `${getLang(sock).weather_wind} ${d.wind_speed}\n` +
+            `${getLang(sock).weather_pressure} ${d.pressure}\n\n` +
             `📍 Coordinates: [${d.coordinates.latitude}, ${d.coordinates.longitude}]\n` +
             `🌐 Full forecast: https://wttr.in/${encodeURIComponent(city)}`;
 
@@ -40,14 +41,14 @@ module.exports = async function weatherCommand(sock, chatId, city, message) {
             text,
             footer: 'Queen Riam 👑',
             buttons: [
-                { id: `.weather ${city}`, text: '🔄 Refresh Weather' },
+                { id: `.weather ${city}`, text: getLang(sock).weather_refresh_btn },
             ],
         }, message);
 
     } catch (error) {
         console.error("Error fetching weather:", error);
         await sock.sendMessage(chatId, {
-            text: "❌ Sorry, I could not fetch the weather right now."
+            text: getLang(sock).weather_error
         }, { quoted: getFakeVcard() });
     }
 };

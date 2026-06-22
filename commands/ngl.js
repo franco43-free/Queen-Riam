@@ -1,5 +1,6 @@
 const axios = require("axios");
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 // Set your NGL username here:
 const NGL_USERNAME = "officialkango";
@@ -9,7 +10,7 @@ async function nglCommand(sock, chatId, message, userMessage, settings) {
 
     if (!text) {
         await sock.sendMessage(chatId, {
-            text: `❌ Please type a message.\n\nUsage: ${settings.prefix}ngl I think the bot needs more memes.`
+            text: `${getLang(sock).ngl_no_message}\n\nUsage: ${settings.prefix}ngl I think the bot needs more memes.`
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -24,18 +25,18 @@ async function nglCommand(sock, chatId, message, userMessage, settings) {
 
         if (res.status === 200) {
             await sock.sendMessage(chatId, {
-                text: `✅ Your anonymous message has been sent!\n\n📝 Message: "${text}"`
+                text: `${getLang(sock).ngl_sent} "${text}"`
             }, { quoted: getFakeVcard() });
         } else {
             await sock.sendMessage(chatId, {
-                text: "❌ Couldn't send your message to NGL. Please try again later."
+                text: getLang(sock).ngl_failed
             }, { quoted: getFakeVcard() });
         }
 
     } catch (err) {
         console.error("nglCommand error:", err);
         await sock.sendMessage(chatId, {
-            text: "❌ Error sending your message to NGL."
+            text: getLang(sock).ngl_error
         }, { quoted: getFakeVcard() });
     }
 }

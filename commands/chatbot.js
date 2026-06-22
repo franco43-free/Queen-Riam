@@ -4,9 +4,12 @@ const path = require('path');
 const settings = require('../settings');
 const getFakeVcard = require('../lib/fakeVcard');
 
+const { getLang } = require('../lib/lang');
 const DATA_DIR = path.join(process.cwd(), 'data');
-const CONFIG_FILE = path.join(DATA_DIR, 'chatbot.json');
-const HISTORY_FILE = path.join(DATA_DIR, 'chatbot_history.json');
+const _CHATBOT_CONFIG_BASE = path.join(DATA_DIR, 'chatbot.json');
+const _CHATBOT_HISTORY_BASE = path.join(DATA_DIR, 'chatbot_history.json');
+function _chatbotConfig(sock){const sid=sock&&sock._sessionNumber?sock._sessionNumber:null;return sid?path.join(DATA_DIR,'chatbot_'+sid+'.json'):_CHATBOT_CONFIG_BASE;}
+function _chatbotHistory(sock){const sid=sock&&sock._sessionNumber?sock._sessionNumber:null;return sid?path.join(DATA_DIR,'chatbot_history_'+sid+'.json'):_CHATBOT_HISTORY_BASE;}
 const CHAT_API = 'https://chatadmin.org/gd-api/v1/chat/send';
 const FIREBASE_API_KEY = 'AIzaSyD7w2BvFDOoPofWuBWzDZGsRNG-3eX4CUc';
 
@@ -22,7 +25,8 @@ const HISTORY_EXPIRE_MS = 30 * 60 * 1000;
 const DEFAULT_PROMPT = 'You are a friendly and helpful WhatsApp AI assistant. Keep your replies concise and conversational.';
 const gTTS = require('gtts');
 
-function loadConfig() {
+function loadConfig(sock) {
+    const CONFIG_FILE = _chatbotConfig(sock);
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (!fs.existsSync(CONFIG_FILE)) {
         const defaults = { enabled: false, mode: 'dm', replyMode: 'text', systemPrompt: DEFAULT_PROMPT };
@@ -39,18 +43,19 @@ function loadConfig() {
     }
 }
 
-function saveConfig(cfg) {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+function saveConfig(cfg, sock) {
+    fs.writeFileSync(_chatbotConfig(sock), JSON.stringify(cfg, null, 2));
 }
 
-function loadHistory() {
+function loadHistory(sock) {
+    const HISTORY_FILE = _chatbotHistory(sock);
     if (!fs.existsSync(HISTORY_FILE)) return {};
     try { return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); }
     catch { return {}; }
 }
 
-function saveHistory(history) {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+function saveHistory(history, sock) {
+    fs.writeFileSync(_chatbotHistory(sock), JSON.stringify(history, null, 2));
 }
 
 function getConversation(history, chatId) {
@@ -169,7 +174,7 @@ async function queryAI(systemPrompt, messages, userMessage) {
 }
 
 async function handleChatbot(sock, chatId, message, senderId, userMessage) {
-    const cfg = loadConfig();
+    const cfg = loadConfig(sock);
     if (!cfg.enabled) return;
 
     if (message.key.fromMe) return;
@@ -193,7 +198,7 @@ async function handleChatbot(sock, chatId, message, senderId, userMessage) {
             react: { text: '💭', key: message.key }
         });
 
-        const history = loadHistory();
+        const history = loadHistory(sock);
         cleanOldHistory(history);
         const conversation = getConversation(history, chatId);
 
@@ -202,7 +207,7 @@ async function handleChatbot(sock, chatId, message, senderId, userMessage) {
         if (result) {
             addToConversation(history, chatId, 'user', userMessage);
             addToConversation(history, chatId, 'assistant', result.answer);
-            saveHistory(history);
+            saveHistory(history, sock);
 
             if (cfg.replyMode === 'audio') {
                 try {
@@ -250,7 +255,7 @@ async function handleChatbot(sock, chatId, message, senderId, userMessage) {
 }
 
 async function chatbotCommand(sock, chatId, message, args, rawQuery) {
-    const cfg = loadConfig();
+    const cfg = loadConfig(sock);
     const sub = args[0]?.toLowerCase();
 
     if (!sub) {
@@ -291,16 +296,16 @@ async function chatbotCommand(sock, chatId, message, args, rawQuery) {
                     text,
                     footer: 'Queen Riam 👑',
                     buttons: [
-                        { id: '.chatbot on', text: '✅ Enable' },
-                        { id: '.chatbot off', text: '❌ Disable' },
-                        { id: '.chatbot dm', text: '💬 DMs Only' },
-                        { id: '.chatbot group', text: '👥 Groups Only' },
-                        { id: '.chatbot all', text: '🌐 Everywhere' },
-                        { id: '.chatbot text', text: '📝 Text Mode' },
-                        { id: '.chatbot audio', text: '🔊 Audio Mode' },
-                        { id: '.chatbot both', text: '📝🔊 Text + Audio' },
-                        { id: '.chatbot prompt', text: '📝 View Training' },
-                        { id: '.chatbot clear', text: '🧹 Clear Memory' },
+                        { id: '.chatbot on',  text: getLang(sock).btn_turn_on  },
+                        { id: '.chatbot off', text: getLang(sock).btn_turn_off },
+                        { id: '.chatbot dm',    text: getLang(sock).chatbot_btn_dm     },
+                        { id: '.chatbot group', text: getLang(sock).chatbot_btn_group  },
+                        { id: '.chatbot all',   text: getLang(sock).chatbot_btn_all   },
+                        { id: '.chatbot text',  text: getLang(sock).chatbot_btn_text  },
+                        { id: '.chatbot audio', text: getLang(sock).chatbot_btn_audio },
+                        { id: '.chatbot both',  text: getLang(sock).chatbot_btn_both  },
+                        { id: '.chatbot prompt', text: getLang(sock).chatbot_btn_prompt },
+                        { id: '.chatbot clear',  text: getLang(sock).chatbot_btn_clear  },
                     ],
                     quoted: getFakeVcard(),
                 });
@@ -318,16 +323,16 @@ async function chatbotCommand(sock, chatId, message, args, rawQuery) {
         saveConfig(cfg);
         const modeText = cfg.mode === 'dm' ? 'DMs' : cfg.mode === 'group' ? 'Groups' : 'Everywhere';
         await sock.sendMessage(chatId, {
-            text: `✅ AI Chatbot is now *ON*\n\n🤖 Mode: *${modeText}*\n🧠 Memory: *Enabled*`
+            text: getLang(sock).chatbot_on.replace('{mode}', modeText)
         }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'off') {
         cfg.enabled = false;
-        saveConfig(cfg);
+        saveConfig(cfg, sock);
         await sock.sendMessage(chatId, {
-            text: '❌ AI Chatbot is now *OFF*'
+            text: getLang(sock).chatbot_off
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -335,42 +340,42 @@ async function chatbotCommand(sock, chatId, message, args, rawQuery) {
     if (sub === 'dm') {
         cfg.mode = 'dm';
         saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '💬 Chatbot mode set to *DMs only*' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).chatbot_dm_only }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'group') {
         cfg.mode = 'group';
         saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '👥 Chatbot mode set to *Groups only*' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).chatbot_groups_only }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'all') {
         cfg.mode = 'all';
         saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '🌐 Chatbot mode set to *Everywhere* (DMs + Groups)' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).chatbot_everywhere }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'text') {
         cfg.replyMode = 'text';
         saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '📝 Chatbot reply mode set to *Text only*' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).chatbot_text_mode }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'audio') {
         cfg.replyMode = 'audio';
         saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '🔊 Chatbot reply mode set to *Audio only*' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).chatbot_audio_mode }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'both') {
         cfg.replyMode = 'both';
         saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '📝🔊 Chatbot reply mode set to *Text + Audio*' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).chatbot_both_mode }, { quoted: getFakeVcard() });
         return;
     }
 
@@ -378,47 +383,47 @@ async function chatbotCommand(sock, chatId, message, args, rawQuery) {
         const prompt = rawQuery.slice(5).trim();
         if (!prompt) {
             await sock.sendMessage(chatId, {
-                text: '❌ Please provide training instructions.\n\n*Example:*\n`.chatbot train You are Luna, a friendly AI assistant created by John. You use casual language and love helping people.`'
+                text: getLang(sock).chatbot_train_usage
             }, { quoted: getFakeVcard() });
             return;
         }
         cfg.systemPrompt = prompt;
-        saveConfig(cfg);
+        saveConfig(cfg, sock);
         await sock.sendMessage(chatId, {
-            text: `✅ *AI Training Updated!*\n\n📝 *New training:*\n_${prompt}_\n\n🧹 Previous chat memories have been cleared so the new training takes full effect.`
+            text: getLang(sock).chatbot_train_success.replace('{prompt}', prompt)
         }, { quoted: getFakeVcard() });
 
-        if (fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, '{}');
+        if (fs.existsSync(_chatbotHistory(sock))) fs.writeFileSync(_chatbotHistory(sock), '{}');
         return;
     }
 
     if (sub === 'prompt') {
         await sock.sendMessage(chatId, {
-            text: `📝 *Current AI Training:*\n\n_${cfg.systemPrompt}_`
+            text: getLang(sock).chatbot_prompt_show.replace('{prompt}', cfg.systemPrompt)
         }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'reset') {
         cfg.systemPrompt = DEFAULT_PROMPT;
-        saveConfig(cfg);
-        if (fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, '{}');
+        saveConfig(cfg, sock);
+        if (fs.existsSync(_chatbotHistory(sock))) fs.writeFileSync(_chatbotHistory(sock), '{}');
         await sock.sendMessage(chatId, {
-            text: '🔄 AI training reset to default and chat memories cleared.'
+            text: getLang(sock).chatbot_reset
         }, { quoted: getFakeVcard() });
         return;
     }
 
     if (sub === 'clear') {
-        if (fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, '{}');
+        if (fs.existsSync(_chatbotHistory(sock))) fs.writeFileSync(_chatbotHistory(sock), '{}');
         await sock.sendMessage(chatId, {
-            text: '🧹 All chat memories cleared. Conversations will start fresh.'
+            text: getLang(sock).chatbot_cleared
         }, { quoted: getFakeVcard() });
         return;
     }
 
     await sock.sendMessage(chatId, {
-        text: '❓ Unknown option. Send *.chatbot* to see all commands.'
+        text: getLang(sock).chatbot_unknown
     }, { quoted: getFakeVcard() });
 }
 

@@ -1,3 +1,4 @@
+const { getLang } = require('../lib/lang');
 async function groupInfoCommand(sock, chatId, msg) {
     try {
         // Get group metadata
@@ -46,7 +47,7 @@ ${listAdmin}
 
     } catch (error) {
         console.error('Error in groupinfo command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to get group info!' });
+        await sock.sendMessage(chatId, { text: getLang(sock).groupinfo_failed });
     }
 }
 

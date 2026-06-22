@@ -1,25 +1,22 @@
-const isAdmin = require('../lib/isAdmin'); // The isAdmin function is no longer used for the permission check.
+const { getLang } = require('../lib/lang');
+const isAdmin = require('../lib/isAdmin');
 
 async function tagAllCommand(sock, chatId, senderId) {
     try {
-        // The isAdmin check has been removed, so all users can now use this command.
-        
-        // Get group metadata
         const groupMetadata = await sock.groupMetadata(chatId);
         const participants = groupMetadata.participants;
 
         if (!participants || participants.length === 0) {
-            await sock.sendMessage(chatId, { text: 'No participants found in the group.' });
+            await sock.sendMessage(chatId, { text: getLang(sock).tagall_no_members });
             return;
         }
 
-        // Create message with each member on a new line
-        let message = '🔊 *Group Members:*\n\n';
+        const t = getLang(sock);
+        let message = t.tagall_header;
         participants.forEach(participant => {
-            message += `@${participant.id.split('@')[0]}\n`; // Add \n for new line
+            message += `@${participant.id.split('@')[0]}\n`;
         });
 
-        // Send message with mentions
         await sock.sendMessage(chatId, {
             text: message,
             mentions: participants.map(p => p.id)
@@ -27,8 +24,8 @@ async function tagAllCommand(sock, chatId, senderId) {
 
     } catch (error) {
         console.error('Error in tagall command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to tag all members.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).tagall_failed });
     }
 }
 
-module.exports = tagAllCommand; // Export directly
+module.exports = tagAllCommand;

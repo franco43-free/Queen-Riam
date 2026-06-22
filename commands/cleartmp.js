@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const { getLang } = require('../lib/lang');
 // Function to clear a single directory
 function clearDirectory(dirPath) {
     try {
@@ -47,7 +48,7 @@ async function clearTmpCommand(sock, chatId, msg) {
         const isOwner = msg.key.fromMe;
         if (!isOwner) {
             await sock.sendMessage(chatId, { 
-                text: '❌ This command is only available for the owner!' 
+                text: getLang(sock).cleartmp_owner_only 
             });
             return;
         }
@@ -67,7 +68,7 @@ async function clearTmpCommand(sock, chatId, msg) {
     } catch (error) {
         console.error('Error in cleartmp command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Failed to clear temporary files!' 
+            text: getLang(sock).cleartmp_failed 
         });
     }
 }

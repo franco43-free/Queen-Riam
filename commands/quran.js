@@ -1,10 +1,11 @@
 const axios = require('axios');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 module.exports = async function quranCommand(sock, chatId, message, query) {
     try {
         if (!query) {
-            await sock.sendMessage(chatId, { text: "📖 Usage: .quran <surah>:<ayah>\nExample: .quran 1:1 or .quran 2:255" });
+            await sock.sendMessage(chatId, { text: getLang(sock).quran_usage });
             return;
         }
 
@@ -13,7 +14,7 @@ module.exports = async function quranCommand(sock, chatId, message, query) {
         const ayah = parseInt(parts[1]);
 
         if (!surah || !ayah || isNaN(surah) || isNaN(ayah)) {
-            await sock.sendMessage(chatId, { text: "❌ Invalid format. Use .quran <surah>:<ayah>\nExample: .quran 2:255" });
+            await sock.sendMessage(chatId, { text: getLang(sock).quran_invalid });
             return;
         }
 
@@ -21,7 +22,7 @@ module.exports = async function quranCommand(sock, chatId, message, query) {
         const res = await axios.get(url);
 
         if (!res.data.status) {
-            await sock.sendMessage(chatId, { text: "❌ Could not fetch the verse. Please check the surah and ayah number." });
+            await sock.sendMessage(chatId, { text: getLang(sock).quran_not_found });
             return;
         }
 
@@ -41,7 +42,7 @@ module.exports = async function quranCommand(sock, chatId, message, query) {
         }, { quoted: getFakeVcard() });
 
     } catch (err) {
-        await sock.sendMessage(chatId, { text: "⚠️ Error fetching verse. Try again later." });
+        await sock.sendMessage(chatId, { text: getLang(sock).quran_error });
         console.error("Quran command error:", err.message);
     }
 };

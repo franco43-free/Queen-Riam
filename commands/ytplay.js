@@ -1,11 +1,10 @@
 const yts = require('yt-search');
 const { getAudio } = require('../lib/media');
+const { getLang } = require('../lib/lang');
 
 async function ytplayCommand(sock, chatId, query, message) {
     if (!query) {
-        return await sock.sendMessage(chatId, {
-            text: '⚠️ Please provide a YouTube link or search query.\n\nExample:\n```.ytplay another love```'
-        });
+        return await sock.sendMessage(chatId, { text: getLang(sock).dl_no_youtube });
     }
 
     try {
@@ -19,7 +18,7 @@ async function ytplayCommand(sock, chatId, query, message) {
             const search = await yts(query);
             if (!search.videos || search.videos.length === 0) {
                 await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
-                return await sock.sendMessage(chatId, { text: `❌ No results found for: ${query}` });
+                return await sock.sendMessage(chatId, { text: `${getLang(sock).dl_no_results} ${query}` });
             }
             ytUrl = search.videos[0].url;
             searchTitle = search.videos[0].title;
@@ -55,7 +54,7 @@ async function ytplayCommand(sock, chatId, query, message) {
     } catch (error) {
         console.error('YTPlay Error:', error.message);
         await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
-        await sock.sendMessage(chatId, { text: '❌ An error occurred while processing your request.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).dl_error });
     }
 }
 

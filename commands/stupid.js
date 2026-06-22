@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const { getLang } = require('../lib/lang');
 
 async function stupidCommand(sock, chatId, quotedMsg, mentionedJid, sender, args) {
     try {
@@ -42,7 +43,7 @@ async function stupidCommand(sock, chatId, quotedMsg, mentionedJid, sender, args
     } catch (error) {
         console.error('Error in stupid command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Sorry, I couldn\'t generate the stupid card. Please try again later!'
+            text: getLang(sock).stupid_error
         });
     }
 }

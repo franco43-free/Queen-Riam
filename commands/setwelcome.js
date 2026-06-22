@@ -1,6 +1,7 @@
 const { setCustomWelcome, clearCustomWelcome, getCustomWelcome } = require('../lib/welcome');
 const getFakeVcard = require('../lib/fakeVcard');
 
+const { getLang } = require('../lib/lang');
 const HELP = `⚙️ *Set a custom welcome message for this group.*
 
 *Placeholders you can use:*
@@ -16,7 +17,7 @@ const HELP = `⚙️ *Set a custom welcome message for this group.*
 
 async function setWelcomeCommand(sock, chatId, message) {
     if (!chatId.endsWith('@g.us')) {
-        return sock.sendMessage(chatId, { text: '❌ This command can only be used in groups.' }, { quoted: getFakeVcard() });
+        return sock.sendMessage(chatId, { text: getLang(sock).setwelcome_groups_only }, { quoted: getFakeVcard() });
     }
 
     const body = message.message?.conversation
@@ -37,7 +38,7 @@ async function setWelcomeCommand(sock, chatId, message) {
 
     if (arg.toLowerCase() === 'reset') {
         clearCustomWelcome(chatId);
-        return sock.sendMessage(chatId, { text: '🔄 Welcome message reset to default.' }, { quoted: getFakeVcard() });
+        return sock.sendMessage(chatId, { text: getLang(sock).setwelcome_reset }, { quoted: getFakeVcard() });
     }
 
     setCustomWelcome(chatId, arg);

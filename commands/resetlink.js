@@ -1,3 +1,4 @@
+const { getLang } = require('../lib/lang');
 async function resetlinkCommand(sock, chatId, senderId) {
     try {
         // Check if sender is admin
@@ -8,7 +9,7 @@ async function resetlinkCommand(sock, chatId, senderId) {
             .includes(senderId);
 
         if (!isAdmin) {
-            await sock.sendMessage(chatId, { text: '❌ Only admins can use this command!' });
+            await sock.sendMessage(chatId, { text: getLang(sock).resetlink_admin_only });
             return;
         }
 
@@ -22,7 +23,7 @@ async function resetlinkCommand(sock, chatId, senderId) {
 
     } catch (error) {
         console.error('Error in resetlink command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to reset group link!' });
+        await sock.sendMessage(chatId, { text: getLang(sock).resetlink_failed });
     }
 }
 

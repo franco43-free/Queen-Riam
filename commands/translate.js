@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 const languageCodes = {
     fr: "French",
@@ -45,7 +46,7 @@ module.exports = async function translateCommand(sock, chatId, message, match) {
                     .join("\n");
 
                 return sock.sendMessage(chatId, {
-                    text: `*TRANSLATOR*\n\nUsage:\n1. Reply to a message with: .translate <lang>\n2. Or type: .translate <text> <lang>\n\nExample:\n.translate hello fr\n.trt hello es\n\n📋 Available Codes:\n${available}`,
+                    text: getLang(sock).translate_usage + `\n\nExample:\n.translate hello fr\n.trt hello es\n\n📋 Available Codes:\n${available}`,
                     quoted: message
                 });
             }
@@ -56,7 +57,7 @@ module.exports = async function translateCommand(sock, chatId, message, match) {
 
         if (!textToTranslate) {
             return sock.sendMessage(chatId, {
-                text: '❌ No text found to translate. Please provide text or reply to a message.',
+                text: getLang(sock).translate_no_text,
                 quoted: message
             });
         }
@@ -101,13 +102,13 @@ module.exports = async function translateCommand(sock, chatId, message, match) {
 
         // Send translation result
         await sock.sendMessage(chatId, {
-            text: `🌐 *Translated (${lang})*\n\n${translatedText}`,
+            text: getLang(sock).translate_header.replace('{lang}', lang) + '\n\n' + translatedText,
         }, { quoted: getFakeVcard() });
 
     } catch (error) {
         console.error('❌ Error in translate command:', error);
         await sock.sendMessage(chatId, {
-            text: '❌ Failed to translate text. Try again later.\n\nUsage:\n1. Reply to a message with: .translate <lang>\n2. Or type: .translate <text> <lang>',
+            text: getLang(sock).translate_failed,
             quoted: message
         });
     }

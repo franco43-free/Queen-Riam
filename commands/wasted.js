@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { channelInfo } = require('../lib/messageConfig');
+const { getLang } = require('../lib/lang');
 
 async function wastedCommand(sock, chatId, message) {
     let userToWaste;
@@ -15,7 +16,7 @@ async function wastedCommand(sock, chatId, message) {
     
     if (!userToWaste) {
         await sock.sendMessage(chatId, { 
-            text: 'Please mention someone or reply to their message to waste them!', 
+            text: getLang(sock).wasted_no_target, 
             ...channelInfo 
         });
         return;
@@ -47,7 +48,7 @@ async function wastedCommand(sock, chatId, message) {
     } catch (error) {
         console.error('Error in wasted command:', error);
         await sock.sendMessage(chatId, { 
-            text: 'Failed to create wasted image! Try again later.',
+            text: getLang(sock).wasted_error,
             ...channelInfo 
         });
     }

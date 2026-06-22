@@ -1,5 +1,6 @@
 const fetch = require("node-fetch");
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function goodnightCommand(sock, chatId, message) {
     try {
@@ -18,7 +19,7 @@ async function goodnightCommand(sock, chatId, message) {
         console.error("Error in goodnight command:", error);
         await sock.sendMessage(
             chatId,
-            { text: "❌ Failed to get goodnight message. Please try again later!" },
+            { text: getLang(sock).goodnight_error },
             { quoted: getFakeVcard() }
         );
     }

@@ -1,10 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
+const { getLang } = require('../lib/lang');
 async function staffCommand(sock, chatId, msg) {
     try {
         if (!chatId.endsWith('@g.us')) {
-            return await sock.sendMessage(chatId, { text: '❌ This command only works in groups!' });
+            return await sock.sendMessage(chatId, { text: getLang(sock).staff_groups_only });
         }
 
         const groupMetadata = await sock.groupMetadata(chatId);
@@ -20,7 +21,7 @@ async function staffCommand(sock, chatId, msg) {
 
         const participants = groupMetadata.participants || [];
         const groupAdmins = participants.filter(p => p.admin === 'admin' || p.admin === 'superadmin');
-        const listAdmin = groupAdmins.map((v, i) => `${i + 1}. @${v.id.split('@')[0]}`).join('\n▢ ') || 'No admins found';
+        const listAdmin = groupAdmins.map((v, i) => `${i + 1}. @${v.id.split('@')[0]}`).join('\n▢ ') || getLang(sock).staff_no_admins;
 
         const owner = groupMetadata.owner 
             || groupAdmins.find(p => p.admin === 'superadmin')?.id 
@@ -44,7 +45,7 @@ async function staffCommand(sock, chatId, msg) {
 
     } catch (error) {
         console.error('Error in staff command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to get admin list!' });
+        await sock.sendMessage(chatId, { text: getLang(sock).staff_failed });
     }
 }
 

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { isButtonModeOn, sendButtonMessage } = require('../lib/buttonHelper');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 let sendButtons;
 try {
     sendButtons = require('kango-wa').sendButtons;
@@ -28,7 +29,7 @@ function decodeHTML(text) {
 
 async function startTrivia(sock, chatId, message) {
     if (triviaGames[chatId]) {
-        await sock.sendMessage(chatId, { text: '⚠️ A trivia game is already in progress!\n\nUse `.answer <your answer>` to respond.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).trivia_in_progress });
         return;
     }
 
@@ -81,13 +82,13 @@ async function startTrivia(sock, chatId, message) {
 
     } catch (error) {
         console.error('Trivia error:', error);
-        await sock.sendMessage(chatId, { text: '❌ Error fetching trivia question. Try again later.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).trivia_error });
     }
 }
 
 async function answerTrivia(sock, chatId, answer, message) {
     if (!triviaGames[chatId]) {
-        await sock.sendMessage(chatId, { text: '⚠️ No trivia game in progress.\n\nStart one with `.trivia`' });
+        await sock.sendMessage(chatId, { text: getLang(sock).trivia_no_game });
         return;
     }
 

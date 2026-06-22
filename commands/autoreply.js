@@ -3,14 +3,16 @@ const path = require('path');
 const moment = require('moment-timezone');
 const getFakeVcard = require('../lib/fakeVcard');
 
+const { getLang } = require('../lib/lang');
 const DATA_DIR    = path.join(process.cwd(), 'data');
-const CONFIG_FILE = path.join(DATA_DIR, 'autoreply.json');
-const IMAGE_FILE  = path.join(DATA_DIR, 'autoreply_image.jpg');
+function _arConfig(sock){const sid=sock&&sock._sessionNumber?sock._sessionNumber:null;return sid?path.join(DATA_DIR,'autoreply_'+sid+'.json'):path.join(DATA_DIR,'autoreply.json');}
+function _arImage(sock){const sid=sock&&sock._sessionNumber?sock._sessionNumber:null;return sid?path.join(DATA_DIR,'autoreply_image_'+sid+'.jpg'):path.join(DATA_DIR,'autoreply_image.jpg');}
 
 const DEFAULT_MSG = "my owners isn't available at the moment you can leave your message";
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
-function loadConfig() {
+function loadConfig(sock) {
+    const CONFIG_FILE = _arConfig(sock);
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (!fs.existsSync(CONFIG_FILE)) {
         const defaults = { enabled: false, message: DEFAULT_MSG, seenUsers: [] };
@@ -21,12 +23,12 @@ function loadConfig() {
     catch { return { enabled: false, message: DEFAULT_MSG, seenUsers: [] }; }
 }
 
-function saveConfig(cfg) {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+function saveConfig(cfg, sock) {
+    fs.writeFileSync(_arConfig(sock), JSON.stringify(cfg, null, 2));
 }
 
-function hasImage() {
-    return fs.existsSync(IMAGE_FILE);
+function hasImage(sock) {
+    return fs.existsSync(_arImage(sock));
 }
 
 // ─── Apply placeholders ───────────────────────────────────────────────────────
@@ -40,7 +42,7 @@ function applyPlaceholders(text, senderName) {
 
 // ─── Auto-reply trigger (called from main.js for every DM) ───────────────────
 async function handleAutoReply(sock, chatId, message, senderId) {
-    const cfg = loadConfig();
+    const cfg = loadConfig(sock);
     if (!cfg.enabled) return;
 
     // Only DMs
@@ -54,7 +56,7 @@ async function handleAutoReply(sock, chatId, message, senderId) {
 
     // Mark as seen
     cfg.seenUsers.push(senderId);
-    saveConfig(cfg);
+    saveConfig(cfg, sock);
 
     // Get sender name
     let senderName = senderId.split('@')[0];
@@ -65,8 +67,8 @@ async function handleAutoReply(sock, chatId, message, senderId) {
 
     const text = applyPlaceholders(cfg.message, senderName);
 
-    if (hasImage()) {
-        const imgBuffer = fs.readFileSync(IMAGE_FILE);
+    if (hasImage(sock)) {
+        const imgBuffer = fs.readFileSync(_arImage(sock));
         await sock.sendMessage(chatId, {
             image: imgBuffer,
             caption: text
@@ -78,13 +80,13 @@ async function handleAutoReply(sock, chatId, message, senderId) {
 
 // ─── .autoreply command handler ───────────────────────────────────────────────
 async function autoreplyCommand(sock, chatId, message, args, rawQuery) {
-    const cfg = loadConfig();
+    const cfg = loadConfig(sock);
     const sub = args[0]?.toLowerCase();
 
     // ── .autoreply (status view) ──────────────────────────────────────────────
     if (!sub) {
         const status  = cfg.enabled ? '✅ *ON*' : '❌ *OFF*';
-        const imgInfo = hasImage() ? 'attached' : 'none';
+        const imgInfo = hasImage(sock) ? 'attached' : 'none';
         const text =
             `📩 *Auto-Reply Status:* ${status}\n` +
             `🖼️ *Image:* ${imgInfo}\n\n` +
@@ -108,8 +110,8 @@ async function autoreplyCommand(sock, chatId, message, args, rawQuery) {
                 text,
                 footer: 'Queen Riam 👑',
                 buttons: [
-                    { id: '.autoreply on',  text: '✅ Enable'  },
-                    { id: '.autoreply off', text: '❌ Disable' },
+                    { id: '.autoreply on',  text: getLang(sock).btn_turn_on  },
+                    { id: '.autoreply off', text: getLang(sock).btn_turn_off },
                 ],
             }, message);
         } else {
@@ -121,43 +123,43 @@ async function autoreplyCommand(sock, chatId, message, args, rawQuery) {
     // ── .autoreply on ─────────────────────────────────────────────────────────
     if (sub === 'on') {
         cfg.enabled = true;
-        saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '✅ Auto-reply is now *ON*.' }, { quoted: getFakeVcard() });
+        saveConfig(cfg, sock);
+        await sock.sendMessage(chatId, { text: getLang(sock).autoreply_on }, { quoted: getFakeVcard() });
         return;
     }
 
     // ── .autoreply off ────────────────────────────────────────────────────────
     if (sub === 'off') {
         cfg.enabled = false;
-        saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '❌ Auto-reply is now *OFF*.' }, { quoted: getFakeVcard() });
+        saveConfig(cfg, sock);
+        await sock.sendMessage(chatId, { text: getLang(sock).autoreply_off }, { quoted: getFakeVcard() });
         return;
     }
 
     // ── .autoreply clear ──────────────────────────────────────────────────────
     if (sub === 'clear') {
         cfg.seenUsers = [];
-        saveConfig(cfg);
-        await sock.sendMessage(chatId, { text: '🧹 Seen-users list cleared. Everyone will get the auto-reply again.' }, { quoted: getFakeVcard() });
+        saveConfig(cfg, sock);
+        await sock.sendMessage(chatId, { text: getLang(sock).autoreply_cleared }, { quoted: getFakeVcard() });
         return;
     }
 
     // ── .autoreply reset ──────────────────────────────────────────────────────
     if (sub === 'reset') {
         cfg.message = DEFAULT_MSG;
-        saveConfig(cfg);
-        if (hasImage()) fs.unlinkSync(IMAGE_FILE);
-        await sock.sendMessage(chatId, { text: '🔄 Auto-reply reset to default message and image removed.' }, { quoted: getFakeVcard() });
+        saveConfig(cfg, sock);
+        if (hasImage(sock)) fs.unlinkSync(_arImage(sock));
+        await sock.sendMessage(chatId, { text: getLang(sock).autoreply_reset }, { quoted: getFakeVcard() });
         return;
     }
 
     // ── .autoreply removeimage ────────────────────────────────────────────────
     if (sub === 'removeimage') {
-        if (hasImage()) {
-            fs.unlinkSync(IMAGE_FILE);
-            await sock.sendMessage(chatId, { text: '🗑️ Auto-reply image removed.' }, { quoted: getFakeVcard() });
+        if (hasImage(sock)) {
+            fs.unlinkSync(_arImage(sock));
+            await sock.sendMessage(chatId, { text: getLang(sock).autoreply_image_removed }, { quoted: getFakeVcard() });
         } else {
-            await sock.sendMessage(chatId, { text: '⚠️ No image is currently set.' }, { quoted: getFakeVcard() });
+            await sock.sendMessage(chatId, { text: getLang(sock).autoreply_no_image }, { quoted: getFakeVcard() });
         }
         return;
     }
@@ -166,12 +168,12 @@ async function autoreplyCommand(sock, chatId, message, args, rawQuery) {
     if (sub === 'set') {
         const newMsg = rawQuery.slice(3).trim(); // slice off "set"
         if (!newMsg) {
-            await sock.sendMessage(chatId, { text: `Usage: .autoreply set <message>\nYou can attach or quote an image too.` }, { quoted: getFakeVcard() });
+            await sock.sendMessage(chatId, { text: getLang(sock).autoreply_usage_set }, { quoted: getFakeVcard() });
             return;
         }
 
         cfg.message = newMsg;
-        saveConfig(cfg);
+        saveConfig(cfg, sock);
 
         // Check for attached image (sent with the command)
         const imgMsg =
@@ -184,20 +186,20 @@ async function autoreplyCommand(sock, chatId, message, args, rawQuery) {
                 const stream = await downloadContentFromMessage(imgMsg, 'image');
                 let buf = Buffer.from([]);
                 for await (const chunk of stream) buf = Buffer.concat([buf, chunk]);
-                fs.writeFileSync(IMAGE_FILE, buf);
-                await sock.sendMessage(chatId, { text: `✅ Auto-reply message and image updated.\n\n*Message:* _${newMsg}_` }, { quoted: getFakeVcard() });
+                fs.writeFileSync(_arImage(sock), buf);
+                await sock.sendMessage(chatId, { text: getLang(sock).autoreply_set_with_image.replace('{msg}', newMsg) }, { quoted: getFakeVcard() });
             } catch (err) {
-                await sock.sendMessage(chatId, { text: `✅ Auto-reply message updated (image failed to save).\n\n*Message:* _${newMsg}_` }, { quoted: getFakeVcard() });
+                await sock.sendMessage(chatId, { text: getLang(sock).autoreply_set_image_failed.replace('{msg}', newMsg) }, { quoted: getFakeVcard() });
             }
         } else {
-            await sock.sendMessage(chatId, { text: `✅ Auto-reply message updated.\n\n*Message:* _${newMsg}_` }, { quoted: getFakeVcard() });
+            await sock.sendMessage(chatId, { text: getLang(sock).autoreply_set_success.replace('{msg}', newMsg) }, { quoted: getFakeVcard() });
         }
         return;
     }
 
     // Unknown subcommand
     await sock.sendMessage(chatId, {
-        text: `❓ Unknown option. Send *.autoreply* to see all commands.`
+        text: getLang(sock).autoreply_unknown
     }, { quoted: getFakeVcard() });
 }
 

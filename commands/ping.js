@@ -3,6 +3,7 @@ const { performance } = require("perf_hooks");
 const settings = require("../settings.js");
 const { isButtonModeOn, sendButtonMessage } = require("../lib/buttonHelper");
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 function formatBytes(bytes) {
     if (bytes === 0) return "0B";
@@ -13,12 +14,13 @@ function formatBytes(bytes) {
 
 async function pingCommand(sock, chatId, message) {
     try {
-        const start   = performance.now();
-        await sock.sendMessage(chatId, { text: "🏓 Pong!" }, { quoted: getFakeVcard() });
+        const t = getLang(sock);
+        const start = performance.now();
+        await sock.sendMessage(chatId, { text: t.ping_pong }, { quoted: getFakeVcard() });
         const latency = ((performance.now() - start) / 1000).toFixed(4);
 
         const cpus = os.cpus();
-        const cpu  = cpus.reduce(
+        const cpu = cpus.reduce(
             (acc, c) => {
                 const total = Object.values(c.times).reduce((a, b) => a + b, 0);
                 acc.total += total;
@@ -31,19 +33,19 @@ async function pingCommand(sock, chatId, message) {
 
         const ramUsage = `${formatBytes(os.totalmem() - os.freemem())} / ${formatBytes(os.totalmem())}`;
         const response =
-            `*Pong!* 🏓\n` +
-            `*Response Speed:* *${latency}* seconds\n\n` +
-            `*💻 ${settings.botName || "Queen Riam"}* Server Info\n` +
-            `RAM Usage: *${ramUsage}*\n` +
-            `CPU Cores: *${cpus.length}*\n` +
-            `CPU Speed: *${(cpu.speed / cpus.length).toFixed(2)} MHz*`;
+            `*${t.ping_pong}*\n` +
+            `${t.ping_response} *${latency}* ${t.ping_seconds}\n\n` +
+            `*💻 ${settings.botName || "Queen Riam"}* ${t.ping_server_info}\n` +
+            `${t.ping_ram} *${ramUsage}*\n` +
+            `${t.ping_cores} *${cpus.length}*\n` +
+            `${t.ping_speed} *${(cpu.speed / cpus.length).toFixed(2)} MHz*`;
 
         if (isButtonModeOn()) {
             await sendButtonMessage(sock, chatId, {
                 text: response,
                 footer: `${settings.botName || "Queen Riam"} 👑`,
                 buttons: [
-                    { id: '.alive', text: '🤖 Alive Status' },
+                    { id: '.alive', text: t.ping_alive_btn },
                 ],
             }, message);
         } else {
@@ -63,7 +65,7 @@ async function pingCommand(sock, chatId, message) {
 
     } catch (error) {
         console.error("Error in ping command:", error);
-        await sock.sendMessage(chatId, { text: "❌ Failed to get ping info." }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).ping_failed }, { quoted: getFakeVcard() });
     }
 }
 

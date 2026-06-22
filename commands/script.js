@@ -1,5 +1,6 @@
 const axios = require("axios");
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function scriptCommand(sock, chatId, message) {
     try {
@@ -56,7 +57,7 @@ async function scriptCommand(sock, chatId, message) {
 
     } catch (err) {
         console.error("Script command error:", err);
-        await sock.sendMessage(chatId, { text: "❌ *Failed to fetch or send the repository ZIP.*" }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).script_failed }, { quoted: getFakeVcard() });
 
         // React error ❌
         await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });

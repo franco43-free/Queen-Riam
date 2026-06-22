@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { downloadSnapchat } = require('../lib/media');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function snapCommand(sock, chatId, message) {
     try {
@@ -27,13 +28,13 @@ async function snapCommand(sock, chatId, message) {
 
         if (!url) {
             return await sock.sendMessage(chatId, {
-                text: '❌ Please provide a Snapchat link, or reply to a message containing one.\n\nExample: *.snap https://www.snapchat.com/spotlight/...*'
+                text: getLang(sock).snap_no_url
             }, { quoted: getFakeVcard() });
         }
 
         if (!url.includes('snapchat.com') && !url.includes('snap.com')) {
             return await sock.sendMessage(chatId, {
-                text: '❌ That does not look like a Snapchat link.'
+                text: getLang(sock).snap_invalid
             }, { quoted: getFakeVcard() });
         }
 
@@ -48,7 +49,7 @@ async function snapCommand(sock, chatId, message) {
 
         if (!urls.length) {
             return await sock.sendMessage(chatId, {
-                text: '❌ No downloadable content found. The snap may be private or the link may be expired.'
+                text: getLang(sock).snap_no_content
             }, { quoted: getFakeVcard() });
         }
 

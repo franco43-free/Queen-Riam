@@ -1,5 +1,6 @@
 const axios = require("axios");
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function deepseekCommand(sock, chatId, message, query) {
     try {
@@ -20,7 +21,7 @@ async function deepseekCommand(sock, chatId, message, query) {
         }
     } catch (error) {
         console.error("Deepseek API Error:", error.message);
-        await sock.sendMessage(chatId, { text: "❌ Deepseek failed. Try again later." }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).deepseek_failed }, { quoted: getFakeVcard() });
     }
 }
 

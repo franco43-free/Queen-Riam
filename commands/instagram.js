@@ -1,5 +1,6 @@
 const { igdl } = require("ruhend-scraper");
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 // Store processed message IDs to prevent duplicates
 const processedMessages = new Set();
@@ -38,7 +39,7 @@ async function instagramCommand(sock, chatId, message) {
         if (!url) {
             return await sock.sendMessage(
                 chatId,
-                { text: "📌 Usage: Send or reply to an Instagram post/reel/video link.\nExample:\n.ig https://instagram.com/reel/xxxx" },
+                { text: getLang(sock).dl_no_instagram },
                 { quoted: getFakeVcard() }
             );
         }
@@ -56,7 +57,7 @@ async function instagramCommand(sock, chatId, message) {
         if (!isValidUrl) {
             return await sock.sendMessage(
                 chatId,
-                { text: "⚠️ Please provide a valid Instagram link (post, reel, or video)." },
+                { text: getLang(sock).dl_invalid_instagram },
                 { quoted: getFakeVcard() }
             );
         }
@@ -69,12 +70,12 @@ async function instagramCommand(sock, chatId, message) {
         if (!downloadData?.data?.length) {
             return await sock.sendMessage(
                 chatId,
-                { text: "❌ No media found at the provided link." },
+                { text: getLang(sock).dl_no_media },
                 { quoted: getFakeVcard() }
             );
         }
 
-        const caption = `〽️ ᴅᴏᴡɴʟᴏᴀᴅᴇᴅ ʙʏ *ǫᴜᴇᴇɴ ʀɪᴀᴍ*`;
+        const caption = getLang(sock).instagram_caption;
 
         for (let i = 0; i < Math.min(20, downloadData.data.length); i++) {
             const media = downloadData.data[i];
@@ -113,7 +114,7 @@ async function instagramCommand(sock, chatId, message) {
         console.error("Error in Instagram command:", error);
         await sock.sendMessage(
             chatId,
-            { text: "❌ An error occurred while processing your request." },
+            { text: getLang(sock).common_error },
             { quoted: getFakeVcard() }
         );
         await sock.sendMessage(chatId, { react: { text: "❌", key: message.key } });

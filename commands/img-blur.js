@@ -1,6 +1,7 @@
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const axios = require('axios');
 const sharp = require('sharp');
+const { getLang } = require('../lib/lang');
 
 async function blurCommand(sock, chatId, message, quotedMessage) {
     try {
@@ -11,7 +12,7 @@ async function blurCommand(sock, chatId, message, quotedMessage) {
             // If replying to a message
             if (!quotedMessage.imageMessage) {
                 await sock.sendMessage(chatId, { 
-                    text: '❌ Please reply to an image message' 
+                    text: getLang(sock).blur_no_image 
                 });
                 return;
             }
@@ -38,7 +39,7 @@ async function blurCommand(sock, chatId, message, quotedMessage) {
             );
         } else {
             await sock.sendMessage(chatId, { 
-                text: '❌ Please reply to an image or send an image with caption .blur' 
+                text: getLang(sock).blur_no_image 
             });
             return;
         }
@@ -60,7 +61,7 @@ async function blurCommand(sock, chatId, message, quotedMessage) {
         // Send the blurred image
         await sock.sendMessage(chatId, {
             image: blurredImage,
-            caption: '*[ ✔ ] Image Blurred Successfully*',
+            caption: getLang(sock).blur_success,
             contextInfo: {
                 forwardingScore: 1,
                 isForwarded: true,
@@ -75,7 +76,7 @@ async function blurCommand(sock, chatId, message, quotedMessage) {
     } catch (error) {
         console.error('Error in blur command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Failed to blur image. Please try again later.' 
+            text: getLang(sock).blur_failed 
         });
     }
 }

@@ -2,10 +2,11 @@ const gTTS = require('gtts');
 const fs = require('fs');
 const path = require('path');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function ttsCommand(sock, chatId, text, message, language = 'en') {
     if (!text) {
-        await sock.sendMessage(chatId, { text: '❌ Please provide the text for TTS conversion.' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).tts_no_text }, { quoted: getFakeVcard() });
         return;
     }
 
@@ -19,7 +20,7 @@ async function ttsCommand(sock, chatId, text, message, language = 'en') {
     gtts.save(filePath, async function (err) {
         if (err) {
             console.error("TTS Error:", err);
-            await sock.sendMessage(chatId, { text: '❌ Error generating TTS audio.' }, { quoted: getFakeVcard() });
+            await sock.sendMessage(chatId, { text: getLang(sock).tts_error_gen }, { quoted: getFakeVcard() });
             await sock.sendMessage(chatId, { react: { text: "❌", key: message.key } });
             return;
         }
@@ -39,7 +40,7 @@ async function ttsCommand(sock, chatId, text, message, language = 'en') {
             await sock.sendMessage(chatId, { react: { text: "✅", key: message.key } });
         } catch (e) {
             console.error("Send Error:", e);
-            await sock.sendMessage(chatId, { text: '❌ Failed to send TTS audio.' }, { quoted: getFakeVcard() });
+            await sock.sendMessage(chatId, { text: getLang(sock).tts_failed_send }, { quoted: getFakeVcard() });
         } finally {
             // 🧹 Clean up temp file
             if (fs.existsSync(filePath)) {

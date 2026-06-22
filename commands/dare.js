@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function dareCommand(sock, chatId, message) {
     try {
@@ -13,7 +14,7 @@ async function dareCommand(sock, chatId, message) {
         await sock.sendMessage(chatId, { text: dareMessage }, { quoted: getFakeVcard() });
     } catch (error) {
         console.error('Error in dare command:', error);
-        await sock.sendMessage(chatId, { text: '❌ Failed to get dare. Please try again later!' }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).dare_error }, { quoted: getFakeVcard() });
     }
 }
 

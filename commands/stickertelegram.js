@@ -8,6 +8,7 @@ const webp = require('node-webpmux');
 const crypto = require('crypto');
 const { exec } = require('child_process');
 const settings = require('../settings');
+const { getLang } = require('../lib/lang');
 
 async function stickerTelegramCommand(sock, chatId, msg) {
     try {
@@ -19,7 +20,7 @@ async function stickerTelegramCommand(sock, chatId, msg) {
         
         if (!args[0]) {
             await sock.sendMessage(chatId, { 
-                text: '⚠️ Please enter the Telegram sticker URL!\n\nExample: .tg https://t.me/addstickers/Zxzxzx_by_AwAw0BOT' 
+                text: getLang(sock).tgsticker_no_url 
             });
             return;
         }
@@ -63,7 +64,7 @@ async function stickerTelegramCommand(sock, chatId, msg) {
 
             // Send initial message with sticker count
             await sock.sendMessage(chatId, { 
-                text: `📦 Found ${stickerSet.result.stickers.length} stickers\n⏳ Starting download...` 
+                text: getLang(sock).tgsticker_found.replace('{count}', stickerSet.result.stickers.length) 
             });
 
             // Create temp directory if it doesn't exist
@@ -168,7 +169,7 @@ async function stickerTelegramCommand(sock, chatId, msg) {
 
             // Only send completion message at the end
             await sock.sendMessage(chatId, { 
-                text: `✅ Successfully downloaded ${successCount}/${stickerSet.result.stickers.length} stickers!` 
+                text: getLang(sock).tgsticker_success.replace('{success}', successCount).replace('{total}', stickerSet.result.stickers.length) 
             });
 
         } catch (error) {
@@ -178,7 +179,7 @@ async function stickerTelegramCommand(sock, chatId, msg) {
     } catch (error) {
         console.error('Error in stickertelegram command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Failed to process Telegram stickers!\nMake sure:\n1. The URL is correct\n2. The sticker pack exists\n3. The sticker pack is public' 
+            text: getLang(sock).tgsticker_failed 
         });
     }
 }

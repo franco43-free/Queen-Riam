@@ -5,6 +5,7 @@ const path = require('path');
 const settings = require('../settings');
 const webp = require('node-webpmux');
 const crypto = require('crypto');
+const { getLang } = require('../lib/lang');
 
 async function stickerCommand(sock, chatId, message) {
     // The message that will be quoted in the reply.
@@ -31,7 +32,7 @@ async function stickerCommand(sock, chatId, message) {
 
     if (!mediaMessage) {
         await sock.sendMessage(chatId, { 
-            text: 'Please reply to an image/video with .sticker, or send an image/video with .sticker as the caption.',
+            text: getLang(sock).sticker_no_media,
             contextInfo: {
                 forwardingScore: 999,
                 isForwarded: true,
@@ -53,7 +54,7 @@ async function stickerCommand(sock, chatId, message) {
 
         if (!mediaBuffer) {
             await sock.sendMessage(chatId, { 
-                text: 'Failed to download media. Please try again.',
+                text: getLang(sock).sticker_failed_dl,
                 contextInfo: {
                     forwardingScore: 999,
                     isForwarded: true,
@@ -140,18 +141,7 @@ async function stickerCommand(sock, chatId, message) {
 
     } catch (error) {
         console.error('Error in sticker command:', error);
-        await sock.sendMessage(chatId, { 
-            text: 'Failed to create sticker! Try again later.',
-            contextInfo: {
-                forwardingScore: 999,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363404284793169@newsletter',
-                    newsletterName: 'Queen Riam',
-                    serverMessageId: -1
-                }
-            }
-        });
+        await sock.sendMessage(chatId, { text: getLang(sock).sticker_failed });
     }
 }
 

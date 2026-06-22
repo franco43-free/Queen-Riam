@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const { getLang } = require('../lib/lang');
 
 // Utility: split long lyrics into safe chunks for WhatsApp
 function chunkText(text, size = 3000) {
@@ -12,7 +13,7 @@ function chunkText(text, size = 3000) {
 async function lyricsCommand(sock, chatId, songTitle) {
     if (!songTitle) {
         await sock.sendMessage(chatId, { 
-            text: '🔍 Please enter the song name! Usage: *lyrics <song name>*'
+            text: getLang(sock).lyrics_no_title
         });
         return;
     }
@@ -29,7 +30,7 @@ async function lyricsCommand(sock, chatId, songTitle) {
         const json = await res.json();
         if (!json.success || !json.result || !json.result.lyrics) {
             await sock.sendMessage(chatId, { 
-                text: `❌ Sorry, I couldn't find lyrics for "${songTitle}".`
+                text: getLang(sock).lyrics_not_found.replace('{song}', songTitle)
             });
             return;
         }
@@ -37,9 +38,7 @@ async function lyricsCommand(sock, chatId, songTitle) {
         const { song, artist, lyrics } = json.result;
 
         // Prepare header
-        const header = `🎵 *Song Lyrics* 🎶\n\n` +
-                       `▢ *Title:* ${song || songTitle}\n` +
-                       `▢ *Artist:* ${artist || 'Unknown'}\n\n📜 *Lyrics:*`;
+        const header = `${getLang(sock).lyrics_header}\n\n${getLang(sock).lyrics_title_label} ${song || songTitle}\n${getLang(sock).lyrics_artist_label} ${artist || 'Unknown'}\n\n📜 *Lyrics:*`;
 
         // Send header first
         await sock.sendMessage(chatId, { text: header });
@@ -53,7 +52,7 @@ async function lyricsCommand(sock, chatId, songTitle) {
     } catch (error) {
         console.error('Error in lyrics command:', error);
         await sock.sendMessage(chatId, { 
-            text: `❌ Could not fetch lyrics for "${songTitle}". Please try again later.`
+            text: getLang(sock).lyrics_error
         });
     }
 }

@@ -1,9 +1,10 @@
 const axios = require('axios');
+const { getLang } = require('../lib/lang');
 
 module.exports = async function bibleCommand(sock, chatId, message, query) {
     try {
         if (!query) {
-            await sock.sendMessage(chatId, { text: "📖 Usage: .bible John 3:16" });
+            await sock.sendMessage(chatId, { text: getLang(sock).bible_usage });
             return;
         }
 
@@ -11,7 +12,7 @@ module.exports = async function bibleCommand(sock, chatId, message, query) {
         const res = await axios.get(url);
 
         if (!res.data.status) {
-            await sock.sendMessage(chatId, { text: "❌ Could not fetch the verse. Please check the reference." });
+            await sock.sendMessage(chatId, { text: getLang(sock).bible_not_found });
             return;
         }
 
@@ -21,7 +22,7 @@ module.exports = async function bibleCommand(sock, chatId, message, query) {
         await sock.sendMessage(chatId, { text: reply });
 
     } catch (err) {
-        await sock.sendMessage(chatId, { text: "⚠️ Error fetching verse. Try again later." });
+        await sock.sendMessage(chatId, { text: getLang(sock).bible_error });
         console.error("Bible command error:", err.message);
     }
 };

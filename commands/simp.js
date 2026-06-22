@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const { getLang } = require('../lib/lang');
 
 async function simpCommand(sock, chatId, quotedMsg, mentionedJid, sender) {
     try {
@@ -47,7 +48,7 @@ async function simpCommand(sock, chatId, quotedMsg, mentionedJid, sender) {
     } catch (error) {
         console.error('Error in simp command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Sorry, I couldn\'t generate the simp card. Please try again later!',
+            text: getLang(sock).simp_error,
             contextInfo: {
                 forwardingScore: 1,
                 isForwarded: true,

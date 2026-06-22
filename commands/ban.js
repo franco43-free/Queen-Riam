@@ -1,48 +1,44 @@
 const fs = require('fs');
 const { channelInfo } = require('../lib/messageConfig');
+const { getLang } = require('../lib/lang');
+
+function _bannedFile(sock){const sid=sock&&sock._sessionNumber?sock._sessionNumber:null;return sid?require('path').join(__dirname,'../data/banned_'+sid+'.json'):require('path').join(__dirname,'../data/banned.json');}
 
 async function banCommand(sock, chatId, message) {
     let userToBan;
-    
-    // Check for mentioned users
+
     if (message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
         userToBan = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
-    }
-    // Check for replied message
-    else if (message.message?.extendedTextMessage?.contextInfo?.participant) {
+    } else if (message.message?.extendedTextMessage?.contextInfo?.participant) {
         userToBan = message.message.extendedTextMessage.contextInfo.participant;
     }
-    
+
     if (!userToBan) {
-        await sock.sendMessage(chatId, { 
-            text: 'Please mention the user or reply to their message to ban!', 
-            ...channelInfo 
-        });
+        await sock.sendMessage(chatId, { text: getLang(sock).ban_no_target, ...channelInfo });
         return;
     }
 
     try {
-        // Add user to banned list
-        const bannedUsers = JSON.parse(fs.readFileSync('./data/banned.json'));
+        const BAN_FILE=_bannedFile(sock);const bannedUsers=fs.existsSync(BAN_FILE)?JSON.parse(fs.readFileSync(BAN_FILE)):[];
         if (!bannedUsers.includes(userToBan)) {
             bannedUsers.push(userToBan);
-            fs.writeFileSync('./data/banned.json', JSON.stringify(bannedUsers, null, 2));
-            
-            await sock.sendMessage(chatId, { 
-                text: `Successfully banned @${userToBan.split('@')[0]}!`,
+            fs.writeFileSync(BAN_FILE, JSON.stringify(bannedUsers, null, 2));
+
+            await sock.sendMessage(chatId, {
+                text: getLang(sock).ban_success.replace('@{user}', `@${userToBan.split('@')[0]}`),
                 mentions: [userToBan],
-                ...channelInfo 
+                ...channelInfo
             });
         } else {
-            await sock.sendMessage(chatId, { 
-                text: `${userToBan.split('@')[0]} is already banned!`,
+            await sock.sendMessage(chatId, {
+                text: getLang(sock).ban_already.replace('@{user}', `@${userToBan.split('@')[0]}`),
                 mentions: [userToBan],
-                ...channelInfo 
+                ...channelInfo
             });
         }
     } catch (error) {
         console.error('Error in ban command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to ban user!', ...channelInfo });
+        await sock.sendMessage(chatId, { text: getLang(sock).ban_failed, ...channelInfo });
     }
 }
 

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+const { getLang } = require('../lib/lang');
 const channelInfo = {
     contextInfo: {
         forwardingScore: 999,
@@ -19,7 +20,7 @@ async function clearSessionCommand(sock, chatId, msg) {
         // Check if sender is owner
         if (!msg.key.fromMe) {
             await sock.sendMessage(chatId, { 
-                text: '❌ This command can only be used by the owner!',
+                text: getLang(sock).clearsession_owner_only,
                 ...channelInfo
             });
             return;
@@ -30,7 +31,7 @@ async function clearSessionCommand(sock, chatId, msg) {
 
         if (!fs.existsSync(sessionDir)) {
             await sock.sendMessage(chatId, { 
-                text: '❌ Session directory not found!',
+                text: getLang(sock).clearsession_not_found,
                 ...channelInfo
             });
             return;
@@ -89,7 +90,7 @@ async function clearSessionCommand(sock, chatId, msg) {
     } catch (error) {
         console.error('Error in clearsession command:', error);
         await sock.sendMessage(chatId, { 
-            text: '❌ Failed to clear session files!',
+            text: getLang(sock).clearsession_failed,
             ...channelInfo
         });
     }

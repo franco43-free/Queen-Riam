@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 const BASE = 'https://4kwallpapers.com';
 const HEADERS = {
@@ -66,12 +67,12 @@ async function wallpaperCommand(sock, chatId, message) {
 
     if (!query) {
         return await sock.sendMessage(chatId, {
-            text: '🖼️ Please provide a search query!\nExample: `.wallpaper Ronaldo`'
+            text: getLang(sock).wallpaper_no_query
         }, { quoted: getFakeVcard() });
     }
 
     await sock.sendMessage(chatId, {
-        text: `🔍 Searching wallpapers for *${query}*...`
+        text: getLang(sock).wallpaper_searching.replace('{query}', query)
     }, { quoted: getFakeVcard() });
 
     let detailPages;
@@ -79,18 +80,18 @@ async function wallpaperCommand(sock, chatId, message) {
         detailPages = await searchWallpapers(query);
     } catch (err) {
         return await sock.sendMessage(chatId, {
-            text: '❌ Search failed. Please try again later.'
+            text: getLang(sock).wallpaper_error
         }, { quoted: getFakeVcard() });
     }
 
     if (!detailPages.length) {
         return await sock.sendMessage(chatId, {
-            text: `❌ No wallpapers found for *${query}*. Try a different keyword.`
+            text: getLang(sock).wallpaper_not_found.replace('{query}', query)
         }, { quoted: getFakeVcard() });
     }
 
     await sock.sendMessage(chatId, {
-        text: `🖼️ Found ${detailPages.length} wallpapers! Fetching now...`
+        text: getLang(sock).wallpaper_found.replace('{count}', detailPages.length)
     }, { quoted: getFakeVcard() });
 
     // Fetch all detail pages concurrently
@@ -102,7 +103,7 @@ async function wallpaperCommand(sock, chatId, message) {
 
     if (!valid.length) {
         return await sock.sendMessage(chatId, {
-            text: '❌ Could not fetch wallpaper images. Try again later.'
+            text: getLang(sock).wallpaper_no_images
         }, { quoted: getFakeVcard() });
     }
 
@@ -124,7 +125,7 @@ async function wallpaperCommand(sock, chatId, message) {
 
     if (sent === 0) {
         await sock.sendMessage(chatId, {
-            text: '❌ Failed to send wallpapers. Try again later.'
+            text: getLang(sock).wallpaper_send_failed
         }, { quoted: getFakeVcard() });
     }
 }

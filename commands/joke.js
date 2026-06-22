@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { sendButtonMessage } = require('../lib/buttonHelper');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 module.exports = async function (sock, chatId, message) {
     try {
@@ -8,22 +9,22 @@ module.exports = async function (sock, chatId, message) {
             headers: { Accept: 'application/json' }
         });
         const joke = response.data.joke;
-        const text = `🤣 *Joke of Today* 🤣\n\n${joke}`;
+        const text = `${getLang(sock).joke_title}${joke}`;
 
         await sendButtonMessage(sock, chatId, {
             text,
             footer: 'Queen Riam 👑',
             buttons: [
-                { id: '.joke',  text: '😂 Another Joke' },
+                { id: '.joke',  text: getLang(sock).joke_btn_another },
                 { id: '.fact',  text: '🧠 Random Fact'  },
-                { id: '.quote', text: '💡 Daily Quote'  },
+                { id: '.quote', text: getLang(sock).joke_btn_quote  },
             ],
         }, message);
 
     } catch (error) {
         console.error('Error fetching joke:', error);
         await sock.sendMessage(chatId, {
-            text: '❌ Sorry, I could not fetch a joke right now.'
+            text: getLang(sock).joke_error
         }, { quoted: getFakeVcard() });
     }
 };

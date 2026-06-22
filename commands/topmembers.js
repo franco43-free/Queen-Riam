@@ -1,22 +1,18 @@
 const fs = require('fs');
 const path = require('path');
+const { getLang } = require('../lib/lang');
 
-const dataFilePath = path.join(__dirname, '..', 'data', 'messageCount.json');
-
-function loadMessageCounts() {
-    if (fs.existsSync(dataFilePath)) {
-        const data = fs.readFileSync(dataFilePath);
-        return JSON.parse(data);
-    }
+function _mcFile(sessionId){return sessionId?path.join(__dirname,'..','data','messageCount_'+sessionId+'.json'):path.join(__dirname,'..','data','messageCount.json');}
+function loadMessageCounts(sessionId) {
+    const f=_mcFile(sessionId);
+    if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f));
     return {};
 }
-
-function saveMessageCounts(messageCounts) {
-    fs.writeFileSync(dataFilePath, JSON.stringify(messageCounts, null, 2));
+function saveMessageCounts(messageCounts, sessionId) {
+    fs.writeFileSync(_mcFile(sessionId), JSON.stringify(messageCounts, null, 2));
 }
-
-function incrementMessageCount(groupId, userId) {
-    const messageCounts = loadMessageCounts();
+function incrementMessageCount(groupId, userId, sessionId) {
+    const messageCounts = loadMessageCounts(sessionId);
 
     if (!messageCounts[groupId]) {
         messageCounts[groupId] = {};
@@ -28,16 +24,17 @@ function incrementMessageCount(groupId, userId) {
 
     messageCounts[groupId][userId] += 1;
 
-    saveMessageCounts(messageCounts);
+    saveMessageCounts(messageCounts, sessionId);
 }
 
 function topMembers(sock, chatId, isGroup) {
+    const sessionId = sock && sock._sessionNumber ? sock._sessionNumber : null;
     if (!isGroup) {
-        sock.sendMessage(chatId, { text: 'This command is only available in group chats.' });
+        sock.sendMessage(chatId, { text: getLang(sock).topmembers_groups_only });
         return;
     }
 
-    const messageCounts = loadMessageCounts();
+    const messageCounts = loadMessageCounts(sessionId);
     const groupCounts = messageCounts[chatId] || {};
 
     const sortedMembers = Object.entries(groupCounts)
@@ -45,11 +42,11 @@ function topMembers(sock, chatId, isGroup) {
         .slice(0, 5); // Get top 5 members
 
     if (sortedMembers.length === 0) {
-        sock.sendMessage(chatId, { text: 'No message activity recorded yet.' });
+        sock.sendMessage(chatId, { text: getLang(sock).topmembers_no_activity });
         return;
     }
 
-    let message = '🏆 Top Members Based on Message Count:\n\n';
+    let message = getLang(sock).topmembers_header;
     sortedMembers.forEach(([userId, count], index) => {
         message += `${index + 1}. @${userId.split('@')[0]} - ${count} messages\n`;
     });

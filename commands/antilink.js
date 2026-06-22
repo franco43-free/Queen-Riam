@@ -1,5 +1,6 @@
 const { setAntilink, getAntilink, removeAntilink } = require('../lib/index');
 const isAdmin = require('../lib/isAdmin');
+const { getLang } = require('../lib/lang');
 
 async function handleAntilinkCommand(sock, chatId, userMessage, senderId, isSenderAdmin) {
     try {
@@ -16,7 +17,7 @@ async function handleAntilinkCommand(sock, chatId, userMessage, senderId, isSend
         const usage = `\`\`\`ANTILINK SETUP\n\nUsage:\n${prefix}antilink\n(to see current status)\n${prefix}antilink [kick|delete|warn] on\n${prefix}antilink [kick|delete|warn] off\n\`\`\``;
 
         if (!action) {
-            const currentConfig = await getAntilink(chatId, 'on');
+            const currentConfig = await getAntilink(chatId, 'on', sock._sessionNumber || null);
             const currentStatus = currentConfig && currentConfig.enabled ? 'ON' : 'OFF';
             const currentAction = currentConfig && currentConfig.action ? currentConfig.action : 'delete (default)';
 
@@ -31,36 +32,36 @@ async function handleAntilinkCommand(sock, chatId, userMessage, senderId, isSend
 
         const validActions = ['kick', 'delete', 'warn'];
         if (!validActions.includes(action)) {
-            await sock.sendMessage(chatId, { text: `*_Invalid action. Please use kick, delete, or warn._*` });
+            await sock.sendMessage(chatId, { text: getLang(sock).antilink_invalid_action });
             return;
         }
 
         if (status === 'on') {
-            const result = await setAntilink(chatId, 'on', action);
+            const result = await setAntilink(chatId, 'on', action, sock._sessionNumber || null);
             if (result) {
                 await sock.sendMessage(chatId, {
-                    text: `*_Antilink has been turned ON with action set to ${action}_*`
+                    text: `${getLang(sock).antilink_turned_on.replace('{action}', action)}`
                 });
             } else {
                 await sock.sendMessage(chatId, {
-                    text: '*_Failed to turn on Antilink_*'
+                    text: getLang(sock).antilink_failed_on
                 });
             }
         } else if (status === 'off') {
-            await removeAntilink(chatId, 'on');
-            await sock.sendMessage(chatId, { text: '*_Antilink has been turned OFF_*' });
+            await removeAntilink(chatId, 'on', sock._sessionNumber || null);
+            await sock.sendMessage(chatId, { text: getLang(sock).antilink_turned_off });
         } else {
             await sock.sendMessage(chatId, { text: usage });
         }
     } catch (error) {
         console.error('Error in antilink command:', error);
-        await sock.sendMessage(chatId, { text: '*_Error processing antilink command_*' });
+        await sock.sendMessage(chatId, { text: getLang(sock).antilink_error });
     }
 }
 
 async function handleLinkDetection(sock, chatId, message, userMessage, senderId) {
     try {
-        const antilinkSetting = await getAntilink(chatId, 'on');
+        const antilinkSetting = await getAntilink(chatId, 'on', sock._sessionNumber || null);
         if (!antilinkSetting || !antilinkSetting.enabled) {
             return false; // No antilink enabled for this group
         }

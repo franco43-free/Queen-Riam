@@ -1,8 +1,9 @@
 const { handleWelcome } = require("../lib/welcome");
+const { getLang } = require('../lib/lang');
 
 async function welcomeCommand(sock, chatId, message) {
     if (!chatId.endsWith("@g.us")) {
-        await sock.sendMessage(chatId, { text: "This command can only be used in groups." });
+        await sock.sendMessage(chatId, { text: getLang(sock).group_only });
         return;
     }
 

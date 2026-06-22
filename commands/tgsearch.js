@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36';
 const BASE = 'https://en.tgramsearch.com';
@@ -56,7 +57,7 @@ async function searchTelegram(query) {
 async function tgsearchCommand(sock, chatId, message, query) {
     if (!query) {
         await sock.sendMessage(chatId, {
-            text: '❌ Please provide a search term.\n\nUsage: .tgsearch <keyword>\nExample: .tgsearch music',
+            text: getLang(sock).tgsearch_no_query,
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -69,13 +70,13 @@ async function tgsearchCommand(sock, chatId, message, query) {
 
         if (results.length === 0) {
             await sock.sendMessage(chatId, {
-                text: `❌ No Telegram channels found for "${query}".`,
+                text: getLang(sock).tgsearch_not_found.replace('{query}', query),
             }, { quoted: getFakeVcard() });
             await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
             return;
         }
 
-        let text = `🔎 *Telegram Search Results for "${query}":*\n`;
+        let text = getLang(sock).tgsearch_header.replace('{query}', query) + '\n';
         results.forEach((r, i) => {
             text += `\n*${i + 1}. ${r.name}*`;
             text += `\n👥 Members: ${r.members || 'N/A'}`;
@@ -92,7 +93,7 @@ async function tgsearchCommand(sock, chatId, message, query) {
     } catch (err) {
         console.error('[TGSEARCH] Error:', err.message);
         await sock.sendMessage(chatId, {
-            text: '❌ Failed to search Telegram channels. Try again later.',
+            text: getLang(sock).tgsearch_error,
         }, { quoted: getFakeVcard() });
         await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
     } finally {

@@ -1,3 +1,4 @@
+const { getLang } = require('../lib/lang');
 const insults = [
     "You're like a cloud. When you disappear, it's a beautiful day!",
     "You bring everyone so much joy when you leave the room!",
@@ -50,7 +51,7 @@ async function insultCommand(sock, chatId, message) {
         
         if (!userToInsult) {
             await sock.sendMessage(chatId, { 
-                text: 'Please mention someone or reply to their message to insult them!'
+                text: getLang(sock).insult_no_target
             });
             return;
         }
@@ -78,7 +79,7 @@ async function insultCommand(sock, chatId, message) {
         } else {
             try {
                 await sock.sendMessage(chatId, { 
-                    text: 'An error occurred while sending the insult.'
+                    text: getLang(sock).insult_error
                 });
             } catch (sendError) {
                 console.error('Error sending error message:', sendError);

@@ -4,8 +4,9 @@ const { tmpdir } = require('os');
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const { writeFile } = require('fs/promises');
 
+const { getLang } = require('../lib/lang');
 const messageStore = new Map();
-const CONFIG_PATH = path.join(__dirname, '../data/antidelete.json');
+function _adConfigPath(sock){const sid=sock&&sock._sessionNumber?sock._sessionNumber:null;return sid?path.join(__dirname,'../data/antidelete_'+sid+'.json'):path.join(__dirname,'../data/antidelete.json');}
 const TEMP_MEDIA_DIR = path.join(__dirname, '../tmp');
 
 // Ensure tmp dir exists
@@ -54,19 +55,20 @@ const cleanTempFolderIfLarge = () => {
 setInterval(cleanTempFolderIfLarge, 60 * 1000);
 
 // Load config
-function loadAntideleteConfig() {
+function loadAntideleteConfig(sock) {
     try {
-        if (!fs.existsSync(CONFIG_PATH)) return { enabled: false };
-        return JSON.parse(fs.readFileSync(CONFIG_PATH));
+        const cp=_adConfigPath(sock);
+        if (!fs.existsSync(cp)) return { enabled: false };
+        return JSON.parse(fs.readFileSync(cp));
     } catch {
         return { enabled: false };
     }
 }
 
 // Save config
-function saveAntideleteConfig(config) {
+function saveAntideleteConfig(config, sock) {
     try {
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        fs.writeFileSync(_adConfigPath(sock), JSON.stringify(config, null, 2));
     } catch (err) {
         console.error('Config save error:', err);
     }
@@ -75,21 +77,21 @@ function saveAntideleteConfig(config) {
 // Command Handler
 async function handleAntideleteCommand(sock, chatId, message, match) {
     if (!message.key.fromMe) {
-        return sock.sendMessage(chatId, { text: '*Only the bot owner can use this command.*' });
+        return sock.sendMessage(chatId, { text: getLang(sock).antidelete_owner_only });
     }
 
-    const config = loadAntideleteConfig();
+    const config = loadAntideleteConfig(sock);
 
     if (!match) {
-        const text = `*ANTIDELETE SETUP*\n\nCurrent Status: ${config.enabled ? '✅ Enabled' : '❌ Disabled'}`;
+        const text = getLang(sock).antidelete_status.replace('{status}', config.enabled ? '✅ Enabled' : '❌ Disabled');
         const { isButtonModeOn, sendButtonMessage } = require('../lib/buttonHelper');
         if (isButtonModeOn()) {
             return sendButtonMessage(sock, chatId, {
                 text,
                 footer: 'Queen Riam 👑',
                 buttons: [
-                    { id: '.antidelete on',  text: '✅ Enable'  },
-                    { id: '.antidelete off', text: '❌ Disable' },
+                    { id: '.antidelete on',  text: getLang(sock).btn_turn_on  },
+                    { id: '.antidelete off', text: getLang(sock).btn_turn_off },
                 ],
             }, message);
         }
@@ -101,17 +103,17 @@ async function handleAntideleteCommand(sock, chatId, message, match) {
     } else if (match === 'off') {
         config.enabled = false;
     } else {
-        return sock.sendMessage(chatId, { text: '*Invalid command. Use .antidelete to see usage.*' });
+        return sock.sendMessage(chatId, { text: getLang(sock).antidelete_invalid });
     }
 
-    saveAntideleteConfig(config);
-    return sock.sendMessage(chatId, { text: `*Antidelete ${match === 'on' ? 'enabled' : 'disabled'}*` });
+    saveAntideleteConfig(config, sock);
+    return sock.sendMessage(chatId, { text: match === 'on' ? getLang(sock).antidelete_on : getLang(sock).antidelete_off });
 }
 
 // Store incoming messages
-async function storeMessage(message) {
+async function storeMessage(sock, message) {
     try {
-        const config = loadAntideleteConfig();
+        const config = loadAntideleteConfig(sock);
         if (!config.enabled) return; // Don't store if antidelete is disabled
 
         if (!message.key?.id) return;
@@ -164,7 +166,7 @@ async function storeMessage(message) {
 // Handle message deletion
 async function handleMessageRevocation(sock, revocationMessage) {
     try {
-        const config = loadAntideleteConfig();
+        const config = loadAntideleteConfig(sock);
         if (!config.enabled) return;
 
         const messageId = revocationMessage.message.protocolMessage.key.id;
@@ -206,7 +208,7 @@ async function handleMessageRevocation(sock, revocationMessage) {
         // Media sending
         if (original.mediaType && fs.existsSync(original.mediaPath)) {
             const mediaOptions = {
-                caption: `*Deleted ${original.mediaType}*\nFrom: @${senderName}`,
+                caption: getLang(sock).antidelete_media_caption.replace('{type}', original.mediaType).replace('{sender}', senderName),
                 mentions: [sender]
             };
 
@@ -233,7 +235,7 @@ async function handleMessageRevocation(sock, revocationMessage) {
                 }
             } catch (err) {
                 await sock.sendMessage(ownerNumber, {
-                    text: `⚠️ Error sending media: ${err.message}`
+                    text: getLang(sock).antidelete_media_error
                 });
             }
 

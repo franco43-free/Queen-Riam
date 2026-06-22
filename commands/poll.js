@@ -1,8 +1,9 @@
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 async function pollCommand(sock, chatId, message, rawQuery, prefix) {
     if (!chatId.endsWith('@g.us')) {
         await sock.sendMessage(chatId, {
-            text: '❌ Polls can only be created in groups.'
+            text: getLang(sock).poll_groups_only
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -12,7 +13,7 @@ async function pollCommand(sock, chatId, message, rawQuery, prefix) {
 
     if (parts.length < 3) {
         await sock.sendMessage(chatId, {
-            text: `📊 *How to create a poll:*\n\n${prefix}poll <question> | option1 | option2 | ...\n\n*Example:*\n${prefix}poll Best fruit? | Apple | Mango | Banana\n\nYou can add up to 12 options.`
+            text: getLang(sock).poll_usage.replace(/\{prefix\}/g, prefix)
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -22,7 +23,7 @@ async function pollCommand(sock, chatId, message, rawQuery, prefix) {
 
     if (options.length > 12) {
         await sock.sendMessage(chatId, {
-            text: '❌ Maximum 12 options allowed per poll.'
+            text: getLang(sock).poll_max_options
         }, { quoted: getFakeVcard() });
         return;
     }

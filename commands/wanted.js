@@ -4,6 +4,7 @@ const https = require('https');
 const http = require('http');
 const settings = require('../settings');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function fetchImageBuffer(url) {
     return new Promise((resolve, reject) => {
@@ -160,7 +161,7 @@ async function wantedCommand(sock, chatId, message) {
             photoBuffer = await fetchImageBuffer(picUrl);
         } catch (e) {
             await sock.sendMessage(chatId, {
-                text: `❌ Couldn't fetch profile picture. The user may have a private profile or no picture set.`
+                text: getLang(sock).wanted_no_pic
             }, { quoted: getFakeVcard() });
             return;
         }
@@ -169,7 +170,7 @@ async function wantedCommand(sock, chatId, message) {
     // Nothing to work with
     if (!photoBuffer) {
         await sock.sendMessage(chatId, {
-            text: `❌ Reply to an image/video or tag someone with *${settings.prefix}wanted*`
+            text: getLang(sock).wanted_usage
         }, { quoted: getFakeVcard() });
         return;
     }
@@ -195,7 +196,7 @@ async function wantedCommand(sock, chatId, message) {
         console.error('[wanted] Error:', err.message);
         await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
         await sock.sendMessage(chatId, {
-            text: `❌ Failed to create wanted poster: ${err.message}`
+            text: getLang(sock).wanted_error + ': ' + err.message
         }, { quoted: getFakeVcard() });
     }
 }

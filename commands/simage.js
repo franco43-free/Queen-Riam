@@ -4,6 +4,7 @@ const fsPromises = require('fs/promises');
 const fse = require('fs-extra');
 const path = require('path');
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+const { getLang } = require('../lib/lang');
 
 const tempDir = './temp';
 if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
@@ -23,7 +24,7 @@ const convertStickerToImage = async (sock, quotedMessage, chatId) => {
     try {
         const stickerMessage = quotedMessage.stickerMessage;
         if (!stickerMessage) {
-            await sock.sendMessage(chatId, { text: 'Reply to a sticker with .simage to convert it.' });
+            await sock.sendMessage(chatId, { text: getLang(sock).simage_no_sticker });
             return;
         }
 
@@ -38,13 +39,13 @@ const convertStickerToImage = async (sock, quotedMessage, chatId) => {
         await sharp(stickerFilePath).toFormat('png').toFile(outputImagePath);
 
         const imageBuffer = await fsPromises.readFile(outputImagePath);
-        await sock.sendMessage(chatId, { image: imageBuffer, caption: 'Here is the converted image!' });
+        await sock.sendMessage(chatId, { image: imageBuffer, caption: getLang(sock).simage_converted });
 
         scheduleFileDeletion(stickerFilePath);
         scheduleFileDeletion(outputImagePath);
     } catch (error) {
         console.error('Error converting sticker to image:', error);
-        await sock.sendMessage(chatId, { text: 'An error occurred while converting the sticker.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).simage_error });
     }
 };
 

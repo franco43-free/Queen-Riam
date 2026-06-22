@@ -1,6 +1,7 @@
+const { getLang } = require('../lib/lang');
 async function clearCommand(sock, chatId) {
     try {
-        const message = await sock.sendMessage(chatId, { text: 'Clearing bot messages...' });
+        const message = await sock.sendMessage(chatId, { text: getLang(sock).clear_clearing });
         const messageKey = message.key; // Get the key of the message the bot just sent
         
         // Now delete the bot's message
@@ -8,7 +9,7 @@ async function clearCommand(sock, chatId) {
         
     } catch (error) {
         console.error('Error clearing messages:', error);
-        await sock.sendMessage(chatId, { text: 'An error occurred while clearing messages.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).clear_error });
     }
 }
 

@@ -2,8 +2,32 @@ const axios = require('axios');
 const yts = require('yt-search');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 const { getVideo } = require('../lib/media');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
+
+// Convert any video to H.264/AAC MP4 (required by WhatsApp)
+function convertToH264(inputPath, outputPath) {
+    return new Promise((resolve, reject) => {
+        const ff = spawn('ffmpeg', [
+            '-i', inputPath,
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '28',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-movflags', '+faststart',
+            '-y',
+            outputPath
+        ]);
+        ff.on('close', code => {
+            if (code === 0) resolve();
+            else reject(new Error('ffmpeg exited with code ' + code));
+        });
+        ff.on('error', reject);
+    });
+}
 
 async function videoCommand(sock, chatId, message) {
     try {
@@ -11,7 +35,7 @@ async function videoCommand(sock, chatId, message) {
         const searchQuery = text.split(' ').slice(1).join(' ').trim();
 
         if (!searchQuery) {
-            return await sock.sendMessage(chatId, { text: 'What video do you want to download?' }, { quoted: getFakeVcard() });
+            return await sock.sendMessage(chatId, { text: getLang(sock).dl_no_video }, { quoted: getFakeVcard() });
         }
 
         let ytUrl = '';
@@ -23,7 +47,7 @@ async function videoCommand(sock, chatId, message) {
         } else {
             const { videos } = await yts(searchQuery);
             if (!videos || videos.length === 0) {
-                return await sock.sendMessage(chatId, { text: 'No videos found!' }, { quoted: getFakeVcard() });
+                return await sock.sendMessage(chatId, { text: getLang(sock).dl_no_results }, { quoted: getFakeVcard() });
             }
             ytUrl = videos[0].url;
             previewTitle = videos[0].title;
@@ -32,7 +56,7 @@ async function videoCommand(sock, chatId, message) {
 
         const urlMatch = ytUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([a-zA-Z0-9_-]{11})/);
         if (!urlMatch) {
-            return await sock.sendMessage(chatId, { text: 'This is not a valid YouTube link!' }, { quoted: getFakeVcard() });
+            return await sock.sendMessage(chatId, { text: getLang(sock).dl_invalid_youtube }, { quoted: getFakeVcard() });
         }
 
         await sock.sendMessage(chatId, { react: { text: '⏳', key: message.key } });
@@ -41,51 +65,50 @@ async function videoCommand(sock, chatId, message) {
 
         const finalTitle = title || previewTitle || 'video';
         const finalThumb = thumbnail || previewThumbnail;
-        const filename = `${finalTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_')}.mp4`;
+        const safeName = finalTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_');
 
         await sock.sendMessage(chatId, {
             image: { url: finalThumb },
-            caption: `🎬 *${finalTitle}*\n📌 Quality: 360p\n\n> _Downloading your video..._`
+            caption: '🎬 *' + finalTitle + '*\n' + getLang(sock).dl_quality + ' 360p\n\n> _' + getLang(sock).video_downloading + '_'
         }, { quoted: getFakeVcard() });
 
-        // Try sending directly from URL first
-        try {
-            await sock.sendMessage(chatId, {
-                video: { url: fileUrl },
-                mimetype: 'video/mp4',
-                fileName: filename,
-                caption: `*${finalTitle}*\n📌 Quality: 360p\n\n> *_Downloaded by Queen Riam_*`
-            }, { quoted: getFakeVcard() });
-            await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
-            return;
-        } catch (directErr) {
-            console.log('[video.js] Direct send failed, buffering:', directErr.message);
-        }
-
-        // Fallback: download to temp file
         const tempDir = path.join(__dirname, '../temp');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
-        const tempFile = path.join(tempDir, `${Date.now()}.mp4`);
+        const stamp = Date.now();
+        const rawFile = path.join(tempDir, stamp + '_raw.mp4');
+        const outFile = path.join(tempDir, stamp + '_out.mp4');
 
         try {
-            const videoRes = await axios.get(fileUrl, { responseType: 'arraybuffer', timeout: 120000, headers: { 'User-Agent': 'Mozilla/5.0' } });
-            fs.writeFileSync(tempFile, Buffer.from(videoRes.data));
+            // Download raw video
+            const videoRes = await axios.get(fileUrl, {
+                responseType: 'arraybuffer',
+                timeout: 120000,
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            fs.writeFileSync(rawFile, Buffer.from(videoRes.data));
 
-            const stats = fs.statSync(tempFile);
+            // Re-encode to H.264/AAC so WhatsApp can play it
+            await convertToH264(rawFile, outFile);
+
+            const stats = fs.statSync(outFile);
             if (stats.size > 62 * 1024 * 1024) {
-                return await sock.sendMessage(chatId, { text: 'Video is too large to send on WhatsApp (max 62MB).' }, { quoted: getFakeVcard() });
+                return await sock.sendMessage(chatId, { text: getLang(sock).dl_too_large }, { quoted: getFakeVcard() });
             }
 
             await sock.sendMessage(chatId, {
-                video: fs.readFileSync(tempFile),
+                video: fs.readFileSync(outFile),
                 mimetype: 'video/mp4',
-                fileName: filename,
-                caption: `*${finalTitle}*\n📌 Quality: 360p\n\n> *_Downloaded by Queen Riam_*`
+                fileName: safeName + '.mp4',
+                caption: '*' + finalTitle + '*\n' + getLang(sock).dl_quality + ' 360p\n\n> *_Downloaded by Queen Riam_*'
             }, { quoted: getFakeVcard() });
+
             await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
 
         } finally {
-            setTimeout(() => { try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile); } catch {} }, 5000);
+            setTimeout(() => {
+                try { if (fs.existsSync(rawFile)) fs.unlinkSync(rawFile); } catch {}
+                try { if (fs.existsSync(outFile)) fs.unlinkSync(outFile); } catch {}
+            }, 5000);
         }
 
     } catch (error) {

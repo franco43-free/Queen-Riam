@@ -1,3 +1,4 @@
+const { getLang } = require('../lib/lang');
 const compliments = [
     "You're amazing just the way you are!",
     "You have a great sense of humor!",
@@ -51,7 +52,7 @@ async function complimentCommand(sock, chatId, message) {
         
         if (!userToCompliment) {
             await sock.sendMessage(chatId, { 
-                text: 'Please mention someone or reply to their message to compliment them!'
+                text: getLang(sock).compliment_no_target
             });
             return;
         }
@@ -79,7 +80,7 @@ async function complimentCommand(sock, chatId, message) {
         } else {
             try {
                 await sock.sendMessage(chatId, { 
-                    text: 'An error occurred while sending the compliment.'
+                    text: getLang(sock).compliment_error
                 });
             } catch (sendError) {
                 console.error('Error sending error message:', sendError);

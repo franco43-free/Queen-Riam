@@ -1,4 +1,5 @@
 const settings = require('../settings');
+const { getLang } = require('../lib/lang');
 const fs = require('fs');
 const path = require('path');
 const { isButtonModeOn } = require('../lib/buttonHelper');
@@ -61,7 +62,7 @@ const CATEGORIES = {
     owner: {
         emoji: '🔒',
         title: 'Owner',
-        commands: ['.mode', '.buttonmode', '.chatbot', '.autoreactstatus', '.autostatusreply', '.statusmsg', '.autoviewstatus', '.poststatus', '.autotype', '.autorecord', '.autorecordtype', '.autoreact', '.autoreply', '.autobio', '.autoread', '.anticall', '.antidelete', '.antiedit', '.setprefix', '.setpp', '.getpp', '.save', '.clearsession', '.cleartmp', '.update'],
+        commands: ['.mode', '.buttonmode', '.chatbot', '.autoreactstatus', '.autostatusreply', '.statusmsg', '.autoviewstatus', '.poststatus', '.autotype', '.autorecord', '.autorecordtype', '.autoreact', '.autoreply', '.autobio', '.autoread', '.anticall', '.antidelete', '.antiedit', '.setprefix', '.setpp', '.getpp', '.save', '.clearsession', '.cleartmp', '.update', '.pair'],
     },
     photo: {
         emoji: '🎨',
@@ -71,7 +72,7 @@ const CATEGORIES = {
     religion: {
         emoji: '✝️',
         title: 'Religion',
-        commands: ['.bible', '.quran', '.catholic'],
+        commands: ['.bible', '.quran', '.catholic', '.hymn'],
     },
     tools: {
         emoji: '💻',
@@ -109,11 +110,23 @@ function getHeader() {
 *╰─────────⟢*`;
 }
 
-function buildCategoryText(key) {
+function getCatTitle(key, sock) {
+    const map = {
+        ai: 'help_cat_ai', download: 'help_cat_download', fun: 'help_cat_fun',
+        games: 'help_cat_games', group: 'help_cat_group', general: 'help_cat_general',
+        owner: 'help_cat_owner', photo: 'help_cat_photo', religion: 'help_cat_religion',
+        tools: 'help_cat_tools', text: 'help_cat_text',
+    };
+    const langKey = map[key];
+    const lang = getLang(sock);
+    return (langKey && lang[langKey]) ? lang[langKey] : (CATEGORIES[key] && CATEGORIES[key].title) || key;
+}
+
+function buildCategoryText(key, sock) {
     const cat = CATEGORIES[key];
     if (!cat) return null;
 
-    let text = `*『 ${cat.emoji} ${cat.title} Menu 』*\n`;
+    let text = `*『 ${cat.emoji} ${getCatTitle(key, sock)} ${getLang(sock).help_menu_suffix || 'Menu'} 』*\n`;
     for (const cmd of cat.commands) {
         text += `*│ ⬡ ${cmd}*\n`;
     }
@@ -121,10 +134,10 @@ function buildCategoryText(key) {
     return text;
 }
 
-function buildFullMenu() {
+function buildFullMenu(sock) {
     let text = getHeader() + '\n';
     for (const key of Object.keys(CATEGORIES)) {
-        text += '\n' + buildCategoryText(key) + '\n';
+        text += '\n' + buildCategoryText(key, sock) + '\n';
     }
     text += '\n> *© ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝚀𝚄𝙴𝙴𝙽 𝚁𝙸𝙰𝙼*';
     return text;
@@ -184,7 +197,7 @@ async function helpCommand(sock, chatId, message, _, subCategory) {
     const menuImage = loadMenuImage();
 
     if (subCategory && CATEGORIES[subCategory]) {
-        const catText = buildCategoryText(subCategory) + '\n\n> *© ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝚀𝚄𝙴𝙴𝙽 𝚁𝙸𝙰𝙼*';
+        const catText = buildCategoryText(subCategory, sock) + '\n\n> *© ᴘᴏᴡᴇʀᴇᴅ ʙʏ 𝚀𝚄𝙴𝙴𝙽 𝚁𝙸𝙰𝙼*';
 
         if (isButtonModeOn() && sendButtons) {
             try {
@@ -192,7 +205,7 @@ async function helpCommand(sock, chatId, message, _, subCategory) {
                     text: catText,
                     footer: '© Queen Riam',
                     buttons: [
-                        { id: '.help', text: '🔙 Back to Menu' },
+                        { id: '.help', text: getLang(sock).help_back_btn },
                     ],
                     quoted: getFakeVcard(),
                     contextInfo: channelCtx,
@@ -210,11 +223,11 @@ async function helpCommand(sock, chatId, message, _, subCategory) {
 
     if (isButtonModeOn() && sendButtons) {
         try {
-            const menuText = getHeader() + '\n\n_Tap a category below to view its commands_';
+            const menuText = getHeader() + '\n\n' + getLang(sock).help_tap_category;
 
             const buttons = Object.entries(CATEGORIES).map(([key, cat]) => ({
                 id: `.help ${key}`,
-                text: `${cat.emoji} ${cat.title}`,
+                text: `${cat.emoji} ${getCatTitle(key, sock)}`,
             }));
 
             const opts = {
@@ -234,7 +247,7 @@ async function helpCommand(sock, chatId, message, _, subCategory) {
         }
     }
 
-    const fullMenu = buildFullMenu();
+    const fullMenu = buildFullMenu(sock);
 
     try {
         await sendWithImage(sock, chatId, fullMenu, message);

@@ -1,5 +1,6 @@
 const axios = require("axios");
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
 async function gptCommand(sock, chatId, message, query) {
     try {
@@ -20,7 +21,7 @@ async function gptCommand(sock, chatId, message, query) {
         }
     } catch (error) {
         console.error("GPT API Error:", error.message);
-        await sock.sendMessage(chatId, { text: "❌ GPT failed. Try again later." }, { quoted: getFakeVcard() });
+        await sock.sendMessage(chatId, { text: getLang(sock).gpt_failed }, { quoted: getFakeVcard() });
     }
 }
 

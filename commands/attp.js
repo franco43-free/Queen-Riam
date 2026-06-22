@@ -2,13 +2,14 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 const Jimp = require('jimp');
+const { getLang } = require('../lib/lang');
 
 async function attpCommand(sock, chatId, message) {
     const userMessage = message.message.conversation || message.message.extendedTextMessage?.text || '';
     const text = userMessage.split(' ').slice(1).join(' ');
 
     if (!text) {
-        await sock.sendMessage(chatId, { text: 'Please provide text after the .attp command.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).attp_no_text });
         return;
     }
 
@@ -44,7 +45,7 @@ async function attpCommand(sock, chatId, message) {
         fs.unlinkSync(stickerPath);
     } catch (error) {
         console.error('Error generating sticker:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to generate the sticker. Please try again later.' });
+        await sock.sendMessage(chatId, { text: getLang(sock).attp_failed });
     }
 }
 

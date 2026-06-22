@@ -1,9 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const getFakeVcard = require('../lib/fakeVcard');
+const { getLang } = require('../lib/lang');
 
-// Path to sudo users JSON file
-const SUDO_FILE = path.join(__dirname, '../data/sudo.json');
+// Session-aware sudo file
+function _sudoFile(sessionId){
+    return sessionId ? path.join(__dirname,'../data/sudo_'+sessionId+'.json') : path.join(__dirname,'../data/sudo.json');
+}
+const SUDO_FILE = path.join(__dirname, '../data/sudo.json'); // kept for non-session fallback
 
 // Ensure data directory exists
 const dataDir = path.dirname(SUDO_FILE);
@@ -12,22 +16,18 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Load sudo users from file
-function loadSudoUsers() {
+function loadSudoUsers(sessionId) {
+    const sf=_sudoFile(sessionId);
     try {
-        if (fs.existsSync(SUDO_FILE)) {
-            const data = fs.readFileSync(SUDO_FILE, 'utf8');
-            return JSON.parse(data);
-        }
-    } catch (error) {
-        console.error('Error loading sudo users:', error);
-    }
+        if (fs.existsSync(sf)) { return JSON.parse(fs.readFileSync(sf, 'utf8')); }
+    } catch (error) { console.error('Error loading sudo users:', error); }
     return { users: [] };
 }
 
 // Save sudo users to file
-function saveSudoUsers(sudoUsers) {
+function saveSudoUsers(sudoUsers, sessionId) {
     try {
-        fs.writeFileSync(SUDO_FILE, JSON.stringify(sudoUsers, null, 2));
+        fs.writeFileSync(_sudoFile(sessionId), JSON.stringify(sudoUsers, null, 2));
         return true;
     } catch (error) {
         console.error('Error saving sudo users:', error);
@@ -36,23 +36,23 @@ function saveSudoUsers(sudoUsers) {
 }
 
 // Check if a user is sudo
-function isSudoUser(userId) {
-    const sudoUsers = loadSudoUsers();
+function isSudoUser(userId, sessionId) {
+    const sudoUsers = loadSudoUsers(sessionId);
     const cleanUserId = userId.replace('@s.whatsapp.net', '').replace('@lid', '').replace(/[^0-9]/g, '');
     const isSudo = sudoUsers.users.some(u => u.replace(/[^0-9]/g, '') === cleanUserId);
     return isSudo;
 }
 
 // Add sudo user
-function addSudoUser(userId) {
-    const sudoUsers = loadSudoUsers();
+function addSudoUser(userId, sessionId) {
+    const sudoUsers = loadSudoUsers(sessionId);
     const cleanUserId = userId.replace(/[^0-9]/g, '');
     
     console.log(`➕ Adding sudo user: ${cleanUserId}`);
     
     if (!sudoUsers.users.includes(cleanUserId)) {
         sudoUsers.users.push(cleanUserId);
-        const success = saveSudoUsers(sudoUsers);
+        const success = saveSudoUsers(sudoUsers, sessionId);
         console.log(`📁 Save successful: ${success}`);
         return success;
     }
@@ -60,26 +60,25 @@ function addSudoUser(userId) {
 }
 
 // Remove sudo user
-function removeSudoUser(userId) {
-    const sudoUsers = loadSudoUsers();
+function removeSudoUser(userId, sessionId) {
+    const sudoUsers = loadSudoUsers(sessionId);
     const cleanUserId = userId.replace(/[^0-9]/g, '');
     const index = sudoUsers.users.indexOf(cleanUserId);
     
     if (index > -1) {
         sudoUsers.users.splice(index, 1);
-        return saveSudoUsers(sudoUsers);
+        return saveSudoUsers(sudoUsers, sessionId);
     }
     return true; // Didn't exist
 }
 
 // Get all sudo users
-function getAllSudoUsers() {
-    return loadSudoUsers().users;
+function getAllSudoUsers(sessionId) {
+    return loadSudoUsers(sessionId).users;
 }
 
 // Check if user has sudo/owner privileges
-// botJid = the currently-connected bot account JID (sock.user.id)
-function hasOwnerPrivileges(userId, message, botJid = null) {
+function hasOwnerPrivileges(userId, message, botJid = null, sessionId = null) {
     // fromMe = message sent from the connected account itself
     if (message.key.fromMe) return true;
 
@@ -93,14 +92,15 @@ function hasOwnerPrivileges(userId, message, botJid = null) {
 
     // Check against owner.json (includes the developer/creator number)
     try {
-        const ownerList = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/owner.json'), 'utf8'));
+        const _ownerFile = sessionId ? path.join(__dirname,'../data/owner_'+sessionId+'.json') : path.join(__dirname,'../data/owner.json');
+        const ownerList = JSON.parse(fs.readFileSync(_ownerFile, 'utf8'));
         if (Array.isArray(ownerList) && ownerList.some(num => String(num).replace(/[^0-9]/g, '') === cleanId)) {
             return true;
         }
     } catch (_) {}
 
     // Check if user is in sudo list
-    return isSudoUser(userId);
+    return isSudoUser(userId, sessionId);
 }
 
 // Main sudo command handler
@@ -122,7 +122,7 @@ async function sudoCommand(sock, chatId, message, settings) {
 
         if (!command) {
             // Show sudo users list
-            const sudoUsers = getAllSudoUsers();
+            const _sid=sock._sessionNumber||null;const sudoUsers = getAllSudoUsers(_sid);
             let userList = '👑 *Sudo Users List*\n\n';
             
             if (sudoUsers.length === 0) {
@@ -142,7 +142,7 @@ async function sudoCommand(sock, chatId, message, settings) {
         }
 
         if (command === 'list') {
-            const sudoUsers = getAllSudoUsers();
+            const _sid=sock._sessionNumber||null;const sudoUsers = getAllSudoUsers(_sid);
             let userList = '👑 *Sudo Users List*\n\n';
             
             if (sudoUsers.length === 0) {
@@ -177,8 +177,9 @@ async function sudoCommand(sock, chatId, message, settings) {
                 return;
             }
 
+            const _sid3=sock._sessionNumber||null;
             if (command === 'add') {
-                const success = addSudoUser(cleanNumber);
+                const success = addSudoUser(cleanNumber, _sid3);
                 if (success) {
                     await sock.sendMessage(chatId, {
                         text: `✅ *Sudo user added!*\n\nNumber: ${cleanNumber}\n\nThis user now has access to all owner commands.`
@@ -189,7 +190,7 @@ async function sudoCommand(sock, chatId, message, settings) {
                     }, { quoted: getFakeVcard() });
                 }
             } else if (command === 'remove') {
-                const success = removeSudoUser(cleanNumber);
+                const success = removeSudoUser(cleanNumber, _sid3);
                 if (success) {
                     await sock.sendMessage(chatId, {
                         text: `✅ *Sudo user removed!*\n\nNumber: ${cleanNumber}\n\nThis user no longer has owner privileges.`
@@ -205,13 +206,13 @@ async function sudoCommand(sock, chatId, message, settings) {
 
         // Invalid command
         await sock.sendMessage(chatId, {
-            text: `❌ Invalid sudo command!\n\n*Available commands:*\n• ${settings.prefix}sudo add <number>\n• ${settings.prefix}sudo remove <number>\n• ${settings.prefix}sudo list\n• ${settings.prefix}sudo`
+            text: getLang(sock).sudo_invalid_cmd
         }, { quoted: getFakeVcard() });
 
     } catch (error) {
         console.error('Error in sudo command:', error);
         await sock.sendMessage(chatId, {
-            text: '❌ An error occurred while processing the sudo command.'
+            text: getLang(sock).sudo_error
         }, { quoted: getFakeVcard() });
     }
 }

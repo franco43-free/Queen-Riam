@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { channelInfo } = require('../lib/messageConfig');
 
+const { getLang } = require('../lib/lang');
+function _bannedFile(sock){const sid=sock&&sock._sessionNumber?sock._sessionNumber:null;return require('path').join(__dirname,sid?'../data/banned_'+sid+'.json':'../data/banned.json');}
+
 async function unbanCommand(sock, chatId, message) {
     let userToUnban;
     
@@ -16,34 +19,34 @@ async function unbanCommand(sock, chatId, message) {
     
     if (!userToUnban) {
         await sock.sendMessage(chatId, { 
-            text: 'Please mention the user or reply to their message to unban!', 
+            text: getLang(sock).unban_no_target, 
             ...channelInfo 
         });
         return;
     }
 
     try {
-        const bannedUsers = JSON.parse(fs.readFileSync('./data/banned.json'));
+        const BAN_FILE=_bannedFile(sock);const bannedUsers=fs.existsSync(BAN_FILE)?JSON.parse(fs.readFileSync(BAN_FILE)):[];
         const index = bannedUsers.indexOf(userToUnban);
         if (index > -1) {
             bannedUsers.splice(index, 1);
-            fs.writeFileSync('./data/banned.json', JSON.stringify(bannedUsers, null, 2));
+            fs.writeFileSync(BAN_FILE, JSON.stringify(bannedUsers, null, 2));
             
             await sock.sendMessage(chatId, { 
-                text: `Successfully unbanned ${userToUnban.split('@')[0]}!`,
+                text: getLang(sock).unban_success.replace('{user}', userToUnban.split('@')[0]),
                 mentions: [userToUnban],
                 ...channelInfo 
             });
         } else {
             await sock.sendMessage(chatId, { 
-                text: `${userToUnban.split('@')[0]} is not banned!`,
+                text: getLang(sock).unban_not_banned.replace('{user}', userToUnban.split('@')[0]),
                 mentions: [userToUnban],
                 ...channelInfo 
             });
         }
     } catch (error) {
         console.error('Error in unban command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to unban user!', ...channelInfo });
+        await sock.sendMessage(chatId, { text: getLang(sock).unban_failed, ...channelInfo });
     }
 }
 

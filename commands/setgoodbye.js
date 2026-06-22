@@ -1,6 +1,7 @@
 const { setCustomGoodbye, clearCustomGoodbye, getCustomGoodbye } = require('../lib/welcome');
 const getFakeVcard = require('../lib/fakeVcard');
 
+const { getLang } = require('../lib/lang');
 const HELP = `⚙️ *Set a custom goodbye message for this group.*
 
 *Placeholders you can use:*
@@ -16,7 +17,7 @@ const HELP = `⚙️ *Set a custom goodbye message for this group.*
 
 async function setGoodbyeCommand(sock, chatId, message) {
     if (!chatId.endsWith('@g.us')) {
-        return sock.sendMessage(chatId, { text: '❌ This command can only be used in groups.' }, { quoted: getFakeVcard() });
+        return sock.sendMessage(chatId, { text: getLang(sock).setgoodbye_groups_only }, { quoted: getFakeVcard() });
     }
 
     const body = message.message?.conversation
@@ -37,7 +38,7 @@ async function setGoodbyeCommand(sock, chatId, message) {
 
     if (arg.toLowerCase() === 'reset') {
         clearCustomGoodbye(chatId);
-        return sock.sendMessage(chatId, { text: '🔄 Goodbye message reset to default.' }, { quoted: getFakeVcard() });
+        return sock.sendMessage(chatId, { text: getLang(sock).setgoodbye_reset }, { quoted: getFakeVcard() });
     }
 
     setCustomGoodbye(chatId, arg);
